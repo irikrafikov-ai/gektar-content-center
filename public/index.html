@@ -1,0 +1,616 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ГектарЪ · Контент-центр</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Prata&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --field:#28502E;--field-deep:#1C3B21;--sprout:#7FB069;--grain:#C99B3F;
+  --paper:#FAF9F4;--card:#FFFFFF;--ink:#22261F;--ink-soft:#5C6355;--line:#E4E2D8;
+  --danger:#B3462E;--radius:14px;--shadow:0 10px 30px rgba(28,59,33,.10);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--paper);color:var(--ink);min-height:100vh}
+.wrap{max-width:880px;margin:0 auto;padding:0 20px 90px}
+header{background:var(--field);color:#F3F0E4;padding:26px 0 0}
+.head-in{max-width:880px;margin:0 auto;padding:0 20px;display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+.brand{font-family:'Prata',serif;font-size:34px;line-height:1.05}
+.brand b{color:var(--grain);font-weight:400}
+.brand small{display:block;font-family:'Inter',sans-serif;font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:#BFD3B4;margin-top:8px}
+.gear{background:transparent;border:1px solid rgba(243,240,228,.35);color:#F3F0E4;border-radius:10px;padding:9px 14px;font-size:13px;cursor:pointer;font-family:inherit}
+.gear:hover{border-color:var(--grain);color:var(--grain)}
+.tabs{max-width:880px;margin:26px auto 0;padding:0 20px;display:flex;gap:8px}
+.tab{flex:1;text-align:left;background:rgba(255,255,255,.08);border:none;color:#DCE5D2;padding:14px 18px;border-radius:12px 12px 0 0;cursor:pointer;font-family:inherit;font-size:15px;font-weight:600}
+.tab span{display:block;font-weight:400;font-size:12px;color:#AFC2A3;margin-top:3px}
+.tab.active{background:var(--paper);color:var(--ink)}
+.tab.active span{color:var(--ink-soft)}
+.tab.video{color:#F0D9A8}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:0 0 var(--radius) var(--radius);box-shadow:var(--shadow);padding:22px;margin-bottom:26px}
+label.fld{display:block;font-size:13px;font-weight:600;color:var(--ink-soft);margin-bottom:8px}
+textarea.news{width:100%;min-height:86px;border:1px solid var(--line);border-radius:10px;padding:12px 14px;font:15px/1.5 'Inter',sans-serif;resize:vertical;background:var(--paper)}
+textarea.news:focus{outline:2px solid var(--sprout);border-color:transparent}
+.hint{font-size:12.5px;color:var(--ink-soft);margin-top:8px}
+.hint b{color:var(--field)}
+.actions{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}
+.btn{border:none;border-radius:10px;padding:12px 20px;font:600 14.5px 'Inter',sans-serif;cursor:pointer}
+.btn:focus-visible{outline:3px solid var(--sprout)}
+.btn-main{background:var(--field);color:#fff}.btn-main:hover{background:var(--field-deep)}
+.btn-ghost{background:transparent;color:var(--field);border:1px solid var(--line)}.btn-ghost:hover{border-color:var(--field)}
+.btn-gold{background:var(--grain);color:#2B2410}.btn-gold:hover{filter:brightness(1.06)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.row{display:flex;gap:12px;flex-wrap:wrap;margin-top:14px}
+.pick{flex:1;min-width:150px;border:1px solid var(--line);border-radius:10px;padding:12px 14px;cursor:pointer;background:var(--paper);font-size:13.5px;font-weight:600;color:var(--ink-soft);text-align:center}
+.pick.on{border-color:var(--field);background:#EAF2E3;color:var(--field)}
+.check{display:flex;align-items:center;gap:8px;margin-top:14px;font-size:13.5px;color:var(--ink-soft);cursor:pointer}
+.check input{width:16px;height:16px;accent-color:var(--field)}
+.loader{display:none;align-items:center;gap:12px;padding:18px 4px;color:var(--ink-soft);font-size:14px}
+.loader.on{display:flex}
+.seed{width:16px;height:16px;border-radius:50%;border:3px solid var(--sprout);border-top-color:transparent;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.post{display:none;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;margin-bottom:26px}
+.post.on{display:block}
+.post-head{display:flex;justify-content:space-between;align-items:center;background:var(--paper);border-bottom:1px solid var(--line);padding:12px 20px;font-size:12.5px;color:var(--ink-soft)}
+.chip{display:inline-block;background:#EAF2E3;color:var(--field);border-radius:99px;padding:3px 10px;font-weight:600;font-size:12px}
+.chip.v{background:#F6EEDB;color:#8A6A1F}
+.post-body{padding:20px}
+.post-body textarea{width:100%;min-height:200px;border:1px dashed var(--line);border-radius:10px;padding:14px;font:15px/1.6 'Inter',sans-serif;resize:vertical}
+.post-body textarea:focus{outline:2px solid var(--grain);border-color:transparent}
+.preview{margin-top:14px;display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.preview .cell{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--paper)}
+.preview .cell .cap{font-size:10.5px;color:var(--ink-soft);padding:5px 8px;border-bottom:1px solid var(--line)}
+.preview img,.preview video{width:100%;display:block;height:120px;object-fit:cover;background:#000}
+.sources{margin-top:14px;font-size:12.5px;color:var(--ink-soft)}
+.sources ul{list-style:none;margin-top:6px}
+.sources li{padding:3px 0 3px 18px;position:relative;word-break:break-all}
+.sources li::before{content:"⛁";position:absolute;left:0;color:var(--sprout)}
+.pending-note{margin-top:14px;background:#F6EEDB;border-radius:10px;padding:12px 14px;font-size:13px;color:#7A5D18}
+.sched-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:2px 20px 4px}
+.sched-bar>label{font-size:13px;font-weight:600;color:var(--ink-soft)}
+.pill{border:1px solid var(--line);border-radius:9px;padding:8px 14px;cursor:pointer;background:var(--paper);font-size:13px;font-weight:600;color:var(--ink-soft)}
+.pill.on{border-color:var(--field);background:#EAF2E3;color:var(--field)}
+.sched-bar input{border:1px solid var(--line);border-radius:9px;padding:8px 12px;font:14px 'Inter',sans-serif;background:var(--paper)}
+.sched-hint{font-size:12.5px;color:var(--field);font-weight:600}
+.post-foot{display:flex;gap:10px;flex-wrap:wrap;padding:14px 20px 20px}
+h2.sec{font-family:'Prata',serif;font-size:20px;margin:34px 0 6px}
+.sec-sub{font-size:12.5px;color:var(--ink-soft);margin-bottom:12px}
+.empty{border:1px dashed var(--line);border-radius:var(--radius);padding:26px;text-align:center;color:var(--ink-soft);font-size:14px}
+.hitem{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;margin-bottom:12px;display:flex;gap:14px;cursor:pointer}
+.hitem:hover{border-color:var(--sprout)}
+.hitem .thumb{width:74px;height:74px;flex:none;border-radius:8px;object-fit:cover;background:#000}
+.hitem .body{flex:1;min-width:0}
+.hitem .meta{display:flex;gap:8px;align-items:center;font-size:12px;color:var(--ink-soft);margin-bottom:8px;flex-wrap:wrap}
+.hitem p{font-size:14px;white-space:pre-wrap;line-height:1.55;max-height:100px;overflow:hidden}
+.hitem .go{font-size:11.5px;color:var(--field);font-weight:600;align-self:center;white-space:nowrap}
+.st{border-radius:99px;padding:2px 9px;font-weight:600;font-size:11.5px}
+.st.ok{background:#EAF2E3;color:var(--field)}
+.st.wait{background:#F0EBDD;color:#7A6B3F}
+.st.plan{background:#E7EEF6;color:#2E5C86}
+.st.err{background:#F8E4DE;color:var(--danger)}
+.cal{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+.cal-top{display:flex;align-items:center;justify-content:space-between;background:var(--field);color:#F3F0E4;padding:14px 18px}
+.cal-top .mon{font-family:'Prata',serif;font-size:19px;text-transform:capitalize}
+.cal-nav{display:flex;gap:8px}
+.cal-nav button{width:34px;height:34px;border-radius:9px;border:1px solid rgba(243,240,228,.3);background:transparent;color:#F3F0E4;font-size:16px;cursor:pointer}
+.cal-nav button:hover{border-color:var(--grain);color:var(--grain)}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr)}
+.cal-dow{text-align:center;font-size:11.5px;font-weight:600;color:var(--ink-soft);padding:10px 0 8px;text-transform:uppercase;letter-spacing:.05em}
+.cal-cell{aspect-ratio:1/1;border-top:1px solid var(--line);border-left:1px solid var(--line);padding:7px 8px;position:relative;cursor:pointer;display:flex;flex-direction:column;gap:4px;min-height:56px}
+.cal-cell:nth-child(7n+1){border-left:none}
+.cal-cell.blank{cursor:default;background:repeating-linear-gradient(45deg,#fbfaf5,#fbfaf5 6px,#f6f4ec 6px,#f6f4ec 12px)}
+.cal-cell .dn{font-size:13px;font-weight:600;color:var(--ink)}
+.cal-cell.today .dn{background:var(--grain);color:#2B2410;border-radius:7px;width:24px;height:24px;display:flex;align-items:center;justify-content:center}
+.cal-cell.sel{background:#EAF2E3;outline:2px solid var(--sprout);outline-offset:-2px;z-index:1}
+.dots{display:flex;gap:3px;flex-wrap:wrap;margin-top:auto}
+.dot{width:7px;height:7px;border-radius:50%}
+.dot.p{background:var(--field)}.dot.c{background:var(--sprout)}.dot.v{background:var(--grain)}
+.cal-cell .cnt{position:absolute;top:6px;right:7px;font-size:10.5px;font-weight:700;color:var(--field);background:#EAF2E3;border-radius:6px;padding:1px 5px}
+.day-detail{border-top:1px solid var(--line);padding:16px 18px;background:var(--paper)}
+.day-detail h3{font-size:14px;font-weight:700;margin-bottom:12px;color:var(--field)}
+.dp{display:flex;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:10px;cursor:pointer}
+.dp:hover{border-color:var(--sprout)}
+.dp .th{width:52px;height:52px;flex:none;border-radius:7px;object-fit:cover;background:#000}
+.dp .info{flex:1;min-width:0}
+.dp .info .t{font-size:13.5px;line-height:1.45;max-height:40px;overflow:hidden;margin-bottom:6px}
+.dp .info .ch{display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:11px;color:var(--ink-soft)}
+.dp .go{font-size:11.5px;color:var(--field);font-weight:600;align-self:center;white-space:nowrap}
+.day-empty{font-size:13px;color:var(--ink-soft);text-align:center;padding:10px}
+.modal{display:none;position:fixed;inset:0;background:rgba(28,59,33,.45);z-index:50;align-items:center;justify-content:center;padding:20px}
+.modal.on{display:flex}
+.mbox{background:var(--card);border-radius:var(--radius);max-width:460px;width:100%;padding:24px;box-shadow:var(--shadow)}
+.mbox h3{font-family:'Prata',serif;font-size:19px;margin-bottom:6px}
+.mbox .sub{font-size:13px;color:var(--ink-soft);margin-bottom:16px}
+.mbox label{display:block;font-size:12.5px;font-weight:600;color:var(--ink-soft);margin:12px 0 5px}
+.mbox input{width:100%;border:1px solid var(--line);border-radius:8px;padding:10px 12px;font:14px 'Inter',sans-serif}
+.mbox input:focus{outline:2px solid var(--sprout);border-color:transparent}
+.mnote{font-size:12px;color:var(--ink-soft);margin-top:14px;background:var(--paper);border-radius:8px;padding:10px 12px}
+.mfoot{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(80px);background:var(--field-deep);color:#F3F0E4;padding:12px 20px;border-radius:10px;font-size:14px;transition:transform .25s;z-index:60;max-width:90vw}
+.toast.on{transform:translateX(-50%) translateY(0)}
+@media (prefers-reduced-motion:reduce){.seed{animation:none}.toast{transition:none}}
+@media (max-width:560px){.brand{font-size:26px}.tab{font-size:13px;padding:11px 12px}.preview{grid-template-columns:repeat(2,1fr)}.cal-cell{min-height:46px;padding:5px}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="head-in">
+    <div class="brand">Гектар<b>Ъ</b><small>контент-центр · Яндекс.Диск → пост → канал</small></div>
+    <button class="gear" onclick="openSettings()">⚙ Каналы публикации</button>
+  </div>
+  <div class="tabs" role="tablist">
+    <button class="tab active" id="tab-partner" role="tab" onclick="setTab('partner')">Партнёрам<span>условия, лоты — деловым языком</span></button>
+    <button class="tab" id="tab-client" role="tab" onclick="setTab('client')">Клиентам<span>про жизнь на земле — тепло</span></button>
+    <button class="tab video" id="tab-video" role="tab" onclick="setTab('video')">🎬 Видеопродакшн<span>фото и видео по домам</span></button>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <section class="panel" id="panelPost">
+    <label class="fld" for="news">Новость, анонс или что-то новое</label>
+    <textarea id="news" class="news" placeholder="Например: старт продаж в «Светлой Долине», первые 10 участков со скидкой…"></textarea>
+    <p class="hint" id="postHint"></p>
+    <div class="actions">
+      <button class="btn btn-main" id="genBtn" onclick="generatePost(false)">Сгенерировать контент</button>
+      <button class="btn btn-ghost" id="regenBtn" onclick="generatePost(true)" style="display:none">Другой вариант</button>
+    </div>
+    <div class="loader" id="loaderPost"><span class="seed"></span><span id="loaderPostText">Открываю Яндекс.Диск…</span></div>
+  </section>
+
+  <section class="panel" id="panelVideo" style="display:none">
+    <label class="fld" for="vidPrompt">Что показать в кадре</label>
+    <textarea id="vidPrompt" class="news" placeholder="Например: обзор одноэтажного дома из бруса 120 м² в «Щёкинских берегах», утро, солнце, зелень…"></textarea>
+    <div class="row" id="vidFormat">
+      <div class="pick on" data-fmt="both" onclick="pickFmt(this)">Фото + видео</div>
+      <div class="pick" data-fmt="video" onclick="pickFmt(this)">Только видео</div>
+      <div class="pick" data-fmt="photo" onclick="pickFmt(this)">Только фото</div>
+    </div>
+    <label class="check"><input type="checkbox" id="vidRef" checked> Взять референс (дом/участок) с Яндекс.Диска</label>
+    <p class="hint">Генерация идёт через студию Higgsfield и <b>тратит кредиты аккаунта</b>. Видео рендерится несколько минут — появится кнопка «Проверить готовность».</p>
+    <div class="actions"><button class="btn btn-gold" id="vidBtn" onclick="generateVideo()">Сгенерировать медиа</button></div>
+    <div class="loader" id="loaderVideo"><span class="seed"></span><span id="loaderVideoText">Готовлю кадр…</span></div>
+  </section>
+
+  <section class="post" id="post">
+    <div class="post-head">
+      <span id="draftTitle">На согласование · <span class="chip" id="postAud">Партнёрам</span></span>
+      <span>текст можно править прямо здесь ✎</span>
+    </div>
+    <div class="post-body">
+      <textarea id="postText" aria-label="Текст поста"></textarea>
+      <div class="preview" id="previewBox" style="display:none"></div>
+      <div class="pending-note" id="pendingBox" style="display:none"></div>
+      <div class="sources" id="sourcesBox" style="display:none"></div>
+    </div>
+    <div class="sched-bar">
+      <label>📅 Публикация</label>
+      <div class="pill on" data-when="now" onclick="pickWhen(this)">Сейчас</div>
+      <div class="pill" data-when="time" onclick="pickWhen(this)">По времени</div>
+      <input type="datetime-local" id="schedAt" oninput="updateSchedHint()" style="display:none">
+      <span class="sched-hint" id="schedHint"></span>
+    </div>
+    <div class="post-foot">
+      <button class="btn btn-gold" id="approveBtn" onclick="approve()">Согласовать</button>
+      <button class="btn btn-ghost" onclick="removeCurrent()">Убрать</button>
+    </div>
+  </section>
+
+  <h2 class="sec">Посты на согласование</h2>
+  <div class="sec-sub">То, что я сгенерировал и ждёт твоего «ок». Согласуешь — уходит в календарь.</div>
+  <div id="pendingList"><div class="empty">Пусто. Сгенерируй пост — он появится здесь на согласование.</div></div>
+
+  <h2 class="sec">Календарь выходов</h2>
+  <div class="sec-sub">Здесь согласованные и одобренные посты. Тыкни день → смотри пост и канал, тыкни пост → открой и отредактируй.</div>
+  <div class="cal">
+    <div class="cal-top">
+      <span class="mon" id="calMon"></span>
+      <div class="cal-nav">
+        <button onclick="calNav(-1)" aria-label="Предыдущий месяц">‹</button>
+        <button onclick="calNav(0)" aria-label="Текущий месяц" title="Сегодня">•</button>
+        <button onclick="calNav(1)" aria-label="Следующий месяц">›</button>
+      </div>
+    </div>
+    <div class="cal-grid" id="calGrid"></div>
+    <div class="day-detail" id="dayDetail" style="display:none"></div>
+  </div>
+
+</div>
+
+<div class="modal" id="settings" role="dialog" aria-modal="true">
+  <div class="mbox">
+    <h3>Каналы публикации</h3>
+    <p class="sub">Подключишь ботов — впиши данные, и посты начнут отправляться по-настоящему. До этого копятся со статусом «ждёт / запланировано».</p>
+    <label for="tgToken">Telegram — токен бота</label><input id="tgToken" placeholder="123456:ABC-DEF…" autocomplete="off">
+    <label for="tgChat">Telegram — ID канала/чата</label><input id="tgChat" placeholder="@gektar_partner или -100123456789">
+    <label for="maxToken">MAX — токен бота</label><input id="maxToken" placeholder="токен из @MasterBot в MAX" autocomplete="off">
+    <label for="maxChat">MAX — ID чата/канала</label><input id="maxChat" placeholder="-73446922084989">
+    <p class="mnote">Данные живут только в этой сессии страницы и уходят напрямую в API Telegram/MAX из браузера.</p>
+    <div class="mfoot"><button class="btn btn-ghost" onclick="closeSettings()">Закрыть</button><button class="btn btn-main" onclick="saveSettings()">Сохранить</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const YANDEX_MCP=""; // адрес yandex-mcp с токеном хранится секретом на сервере (YANDEX_MCP_URL)
+const HIGGS_MCP="";   // подставляется на сервере
+
+let tab='partner',vidFmt='both';
+let current=null,currentSource=null;   // 'pending' | 'approved'
+let whenMode='now';
+let lastText='';
+let cfg={tgToken:'',tgChat:'',maxToken:'',maxChat:''};
+const pending=[];     // на согласование
+const approved=[];    // в календаре
+let seq=1;
+let calRef=new Date();calRef.setDate(1);calRef.setHours(0,0,0,0);
+let selKey=null;
+
+/* ── эталон партнёрского поста ── */
+const PARTNER_TEMPLATE=`ФИРМЕННАЯ СТРУКТУРА поста для партнёров (следуй ей строго; эмодзи-маркеры и разделители ⸻ обязательны):
+
+🔥 Старт продаж: "<Название проекта>"
+Локация: <водоём/область, населённый пункт>
+📍 <расстояние от Москвы/МКАД>, ключевые ориентиры
+— <окружение маркерами через тире: школа, садик, магазины, транспорт, храм, водоём, отель>
+📌 на карте: <ссылка, если есть в материалах>
+⸻
+💰 Цена:
+👉 от <цена> ₽ за <участок / сотку / гектар>
+🔴 Комиссия партнёрам — 20% (не менее <сумма> ₽), заложена в цену
+⸻
+📊 Условия:
+✔️ Рассрочка 0% от собственника до 12 месяцев
+✔️ Первоначальный взнос от 30% (если есть)
+✔️ Коммуникации (газ/свет/вода) по границам участков
+✔️ <круглогодичный подъезд / ипотека / ДомКлик — если есть>
+Общая площадь проекта: <N> Га
+✅ Кадастровые номера: <перечислить построчно>
+Назначение: <ИЖС / Сельхоз>
+👉 будет размежевано: <N> участков
+⸻
+💡 Подходит под:
+— <инвестиции, дача/дом, аренда, глэмпинг, агротуризм, пасека — по проекту>
+⸻
+🚀 Почему сейчас:
+— <низкий вход, инфраструктура, развитие региона, потенциал роста стоимости>
+🔗 Материалы: <3D-тур / шахматка — ссылки, если есть>
+
+ПРАВИЛА:
+- Все конкретные факты (цена, комиссия, кадастровые номера, площадь, коммуникации, ссылки) бери ТОЛЬКО из материалов проекта на Яндекс.Диске. Не выдумывай числа: если данных нет — пропусти строку.
+- Тон деловой, партнёрский, без клиентских эмоций и «воды». Короткие строки.
+- Сохрани фирменные эмодзи (🔥📍💰📊💡🚀🔴✔️👉✅📌🔗) и разделители ⸻.`;
+
+function setTab(t){
+  tab=t;
+  document.getElementById('tab-partner').classList.toggle('active',t==='partner');
+  document.getElementById('tab-client').classList.toggle('active',t==='client');
+  document.getElementById('tab-video').classList.toggle('active',t==='video');
+  document.getElementById('panelPost').style.display=t==='video'?'none':'block';
+  document.getElementById('panelVideo').style.display=t==='video'?'block':'none';
+  document.getElementById('post').classList.remove('on');current=null;currentSource=null;
+  document.getElementById('postHint').innerHTML=t==='partner'
+    ?'Пусто — не страшно: пройдусь по <b>Яндекс.Диску</b>, соберу пост по фирменной структуре и приложу <b>4–5 реальных фото проекта</b> с Диска.'
+    :'Пусто — не страшно: соберу тёплый пост из материалов проекта на <b>Яндекс.Диске</b> и приложу фото.';
+}
+function pickFmt(el){document.querySelectorAll('#vidFormat .pick').forEach(p=>p.classList.remove('on'));el.classList.add('on');vidFmt=el.dataset.fmt;}
+function pickWhen(el){document.querySelectorAll('.sched-bar .pill').forEach(p=>p.classList.remove('on'));el.classList.add('on');whenMode=el.dataset.when;
+  const inp=document.getElementById('schedAt');inp.style.display=whenMode==='time'?'inline-block':'none';
+  if(whenMode==='time'&&!inp.value)inp.value=toLocalInput(new Date(Date.now()+3600000));updateSchedHint();}
+
+function loader(which,on,lines){
+  const el=document.getElementById(which==='post'?'loaderPost':'loaderVideo');
+  const txt=document.getElementById(which==='post'?'loaderPostText':'loaderVideoText');
+  el.classList.toggle('on',on);
+  document.querySelectorAll('.btn').forEach(b=>{if(b.classList.contains('btn-main')||b.classList.contains('btn-gold')||b.id==='regenBtn')b.disabled=on;});
+  clearInterval(el._t);
+  if(on){let i=0;txt.textContent=lines[0];el._t=setInterval(()=>{i=(i+1)%lines.length;txt.textContent=lines[i];},3500);}
+}
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),3800);}
+
+/* ── генерация поста ── */
+async function generatePost(variant){
+  const news=document.getElementById('news').value.trim();
+  const partner=tab==='partner';
+  loader('post',true,['Открываю Яндекс.Диск…','Смотрю папку проекта…','Собираю по структуре…','Подбираю 4–5 фото…','Пишу текст…']);
+  document.getElementById('post').classList.remove('on');
+  try{
+    const task=news?`Инфоповод от администратора: «${news}». Это основа поста. Загляни в папку проекта на Яндекс.Диске за фактами и фото.`
+      :`Инфоповода нет. Изучи Яндекс.Диск: list_files по корню, выбери папку проекта («Щёкинские берега», «Светлая Долина», «Серебряные Пруды» и т.п.), посмотри содержимое и собери пост на основе реальных материалов.`;
+    const antiRepeat=variant&&lastText?`Предыдущий вариант не подошёл — сделай заметно другой (другой проект или другой акцент). Прошлый текст: «${lastText.slice(0,400)}»`:'';
+    const brief=partner
+      ? `Ты — SMM-редактор проекта «ГектарЪ» (девелопер загородных участков и посёлков). Пишешь пост для ПАРТНЁРОВ (агентов, риелторов) в фирменном стиле бренда.
+
+${PARTNER_TEMPLATE}
+
+${task}
+${antiRepeat}
+
+ФОТО: приложи 4–5 фотографий проекта. Открой папку проекта на Яндекс.Диске, выбери 4–5 подходящих фото (участки, вид на воду, генплан/шахматка, дома) и получи публичные ссылки через get_public_link. Если в папке меньше — используй сколько есть; если фото нет совсем — сгенерируй 1–2 уместных через hexvild generate_image.`
+      : `Ты — SMM-редактор проекта «ГектарЪ». Пишешь пост для КЛИЕНТОВ (покупателей). Тон тёплый, живой, по-человечески: про жизнь на своей земле, дом, природу, выгоды. Один мягкий призыв в конце. Без канцелярита и агентского жаргона.
+
+${task}
+${antiRepeat}
+
+ФОТО: приложи 2–4 красивых фото проекта с Яндекс.Диска (get_public_link); если нет — сгенерируй уместное через hexvild generate_image. Факты (цены/сроки) — только если реально есть в материалах.`;
+
+    const res=await fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:8000,
+        mcp_servers:[{type:"url",url:YANDEX_MCP,name:"yandex-gektar"},{type:"url",url:HIGGS_MCP,name:"hexvild"}],
+        messages:[{role:"user",content:brief+`
+
+РАБОТАЙ ЭФФЕКТИВНО (это важно):
+- Не пиши промежуточных комментариев о своих действиях — они не нужны.
+- Если проект назван — сразу открой ЕГО папку (например /ГектарЪ. Развитие территорий/Тверская область/"Светлая долина"), не обходи всё дерево диска.
+- За фото зайди в подпапку «Фотографии» (или «Генплан») проекта, возьми 4–5 файлов и получи публичные ссылки через get_public_link. Не открывай десятки папок.
+- ПОСЛЕДНИМ сообщением верни ТОЛЬКО валидный JSON и больше НИЧЕГО (без пояснений, без markdown):
+{"text":"готовый текст поста","photos":["url1","url2","url3","url4","url5"],"generated":false,"sources":["пути с Диска"]}`}]})});
+    const data=await res.json();if(data.error)throw new Error(data.error.message||'Ошибка API');
+    const p=parsePost(data);
+    if(!p||!(p.text||'').trim()){
+      toast(data.stop_reason==='max_tokens'
+        ?'Не успел собрать за один проход. Уточни проект в поле выше и жми ещё раз.'
+        :'Не получилось собрать пост. Попробуй ещё раз или уточни проект.');
+      return;
+    }
+    const urls=(p.photos||[]).filter(u=>u&&u!=='null').slice(0,6);
+    const media=urls.map((u,i)=>({type:'photo',url:u,cap:(p.generated?'фото · генерация':'фото '+(i+1))}));
+    const item={id:seq++,text:p.text.trim(),media,sources:[...new Set([...(p.sources||[]),...toolInputs(data)])].filter(Boolean),aud:tab,renderNote:null,date:null,scheduled:false,tg:'wait',max:'wait'};
+    pending.push(item);lastText=item.text;
+    setEditor(item,'pending');renderPending();
+  }catch(e){console.error(e);toast('Не вышло: '+e.message);}
+  finally{loader('post',false);document.getElementById('regenBtn').style.display='inline-block';}
+}
+
+/* ── видеопродакшн ── */
+async function generateVideo(){
+  const prompt=document.getElementById('vidPrompt').value.trim();
+  if(!prompt){toast('Опиши, что показать в кадре.');return;}
+  const useRef=document.getElementById('vidRef').checked;
+  loader('video',true,['Ищу референс на Диске…','Собираю кадр…','Рендерю фото…','Запускаю видео…','Ждём студию…']);
+  document.getElementById('post').classList.remove('on');
+  try{
+    const want=vidFmt==='photo'?'только фото':vidFmt==='video'?'только видео':'фото и короткое видео (5–10 сек)';
+    const refLine=useRef?'Сначала найди на Яндекс.Диске подходящее фото дома/участка (list_files → get_public_link) и используй как визуальный референс/базу.':'Референс с Диска не нужен, генерируй с нуля.';
+    const steps=vidFmt==='photo'?'Сгенерируй фото через hexvild generate_image.':vidFmt==='video'?'Сгенерируй видео через hexvild generate_video (при необходимости сперва кадр generate_image).':'Сгенерируй фото через generate_image, затем короткое видео через generate_video на его основе.';
+    const res=await fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:6000,
+        mcp_servers:[{type:"url",url:YANDEX_MCP,name:"yandex-gektar"},{type:"url",url:HIGGS_MCP,name:"hexvild"}],
+        messages:[{role:"user",content:
+`Ты — продюсер медиа для «ГектарЪ» (загородные дома и участки). Нужно ${want}.
+Задача: «${prompt}».
+${refLine}
+${steps}
+Дождись готовых URL (используй job_display/status). Напиши короткую подпись (2–3 предложения, тёплый тон). Не пиши промежуточных комментариев.
+ПОСЛЕДНИМ сообщением верни ТОЛЬКО валидный JSON и больше НИЧЕГО:
+{"caption":"подпись","photo_url":"или null","video_url":"или null","pending":"текст если ещё рендерится, иначе null","job_ids":["id"],"sources":["пути с Диска"]}`}]})});
+    const data=await res.json();if(data.error)throw new Error(data.error.message||'Ошибка API');
+    const p=parsePost(data)||{};const media=[];
+    if(p.photo_url&&p.photo_url!=='null')media.push({type:'photo',url:p.photo_url,cap:'фото'});
+    if(p.video_url&&p.video_url!=='null')media.push({type:'video',url:p.video_url,cap:'видео'});
+    const note=(p.pending&&p.pending!=='null')?{note:p.pending,jobs:p.job_ids||[]}:null;
+    if(!media.length&&!note){toast(data.stop_reason==='max_tokens'?'Студия не успела за один проход — попробуй ещё раз.':'Студия не вернула медиа — переформулируй запрос.');return;}
+    const item={id:seq++,text:(p.caption||prompt).trim(),media,sources:[...new Set([...(p.sources||[]),...toolInputs(data)])].filter(Boolean),aud:'video',
+      renderNote:note,date:null,scheduled:false,tg:'wait',max:'wait'};
+    pending.push(item);setEditor(item,'pending');renderPending();
+  }catch(e){console.error(e);toast('Не вышло: '+e.message);}
+  finally{loader('video',false);}
+}
+async function checkVideo(){
+  if(!current||!current.renderNote)return;
+  loader('video',true,['Спрашиваю студию…','Проверяю готовность…']);
+  try{
+    const res=await fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:2000,mcp_servers:[{type:"url",url:HIGGS_MCP,name:"hexvild"}],
+        messages:[{role:"user",content:`Проверь готовность задач Higgsfield и верни финальные ссылки. ID: ${JSON.stringify(current.renderNote.jobs)}. Используй job_display/status. Не пиши комментариев, верни ТОЛЬКО JSON.
+Ответь СТРОГО JSON: {"photo_url":"или null","video_url":"или null","pending":"текст если ещё рендерится, иначе null"}`}]})});
+    const data=await res.json();const p=parsePost(data)||{};
+    if(p.photo_url&&p.photo_url!=='null'&&!current.media.some(m=>m.type==='photo'))current.media.push({type:'photo',url:p.photo_url,cap:'фото'});
+    if(p.video_url&&p.video_url!=='null'&&!current.media.some(m=>m.type==='video'))current.media.push({type:'video',url:p.video_url,cap:'видео'});
+    current.renderNote=(p.pending&&p.pending!=='null')?{note:p.pending,jobs:current.renderNote.jobs}:null;
+    renderResult();if(!current.renderNote)toast('Медиа готово ✅');
+  }catch(e){console.error(e);toast('Не удалось проверить: '+e.message);}
+  finally{loader('video',false);}
+}
+
+/* ── редактор ── */
+function setEditor(item,source){current=item;currentSource=source;renderResult();}
+function renderResult(){
+  const aud=current.aud;
+  const chip=document.getElementById('postAud');
+  chip.textContent=aud==='partner'?'Партнёрам':aud==='client'?'Клиентам':'Видеопродакшн';
+  chip.className='chip'+(aud==='video'?' v':'');
+  document.getElementById('draftTitle').firstChild.textContent=(currentSource==='approved'?'Согласованный пост · ':'На согласование · ');
+  document.getElementById('approveBtn').textContent=currentSource==='approved'?'Сохранить изменения':'Согласовать';
+  document.getElementById('postText').value=current.text;
+
+  const pv=document.getElementById('previewBox');
+  if(current.media.length){pv.style.display='grid';
+    pv.innerHTML=current.media.map(m=>{
+      const inner=m.type==='video'?'<video src="'+m.url+'" controls playsinline></video>':'<img src="'+m.url+'" alt="" onerror="this.style.opacity=.3">';
+      return '<div class="cell"><div class="cap">'+m.cap+'</div>'+inner+'</div>';}).join('');
+  }else pv.style.display='none';
+
+  const pb=document.getElementById('pendingBox');
+  if(current.renderNote){pb.style.display='block';pb.innerHTML='⏳ '+escapeHtml(current.renderNote.note)+' &nbsp; <button class="btn btn-ghost" style="padding:6px 12px" onclick="checkVideo()">Проверить готовность</button>';}
+  else pb.style.display='none';
+
+  const sb=document.getElementById('sourcesBox');
+  if(current.sources&&current.sources.length){sb.style.display='block';sb.innerHTML='Источники на Яндекс.Диске:<ul>'+current.sources.map(s=>'<li>'+escapeHtml(s)+'</li>').join('')+'</ul>';}
+  else sb.style.display='none';
+
+  // дата: по умолчанию «сейчас», либо время существующего запланированного
+  if(currentSource==='approved'&&current.scheduled&&current.date){
+    whenMode='time';document.querySelector('.sched-bar .pill[data-when="now"]').classList.remove('on');
+    document.querySelector('.sched-bar .pill[data-when="time"]').classList.add('on');
+    const inp=document.getElementById('schedAt');inp.style.display='inline-block';inp.value=toLocalInput(current.date);
+  }else{
+    whenMode='now';document.querySelector('.sched-bar .pill[data-when="now"]').classList.add('on');
+    document.querySelector('.sched-bar .pill[data-when="time"]').classList.remove('on');
+    document.getElementById('schedAt').style.display='none';
+  }
+  updateSchedHint();
+  document.getElementById('post').classList.add('on');
+  document.getElementById('post').scrollIntoView({behavior:'smooth',block:'start'});
+}
+function updateSchedHint(){
+  const h=document.getElementById('schedHint');
+  if(whenMode==='now'){h.textContent='→ уйдёт в канал сразу после согласования';return;}
+  const v=document.getElementById('schedAt').value;
+  if(!v){h.textContent='→ выбери дату и время';return;}
+  h.textContent='→ '+new Date(v).toLocaleString('ru-RU',{day:'2-digit',month:'long',hour:'2-digit',minute:'2-digit'});
+}
+function removeCurrent(){
+  if(!current)return;
+  const arr=currentSource==='approved'?approved:pending;
+  const i=arr.findIndex(x=>x.id===current.id);if(i>-1)arr.splice(i,1);
+  document.getElementById('post').classList.remove('on');current=null;currentSource=null;
+  renderPending();renderCalendar();
+}
+
+/* ── согласование ── */
+async function approve(){
+  if(!current)return;
+  current.text=document.getElementById('postText').value.trim();
+  if(!current.text&&!current.media.length){toast('Пусто — нечего сохранять.');return;}
+  let date,future;
+  if(whenMode==='time'){const v=document.getElementById('schedAt').value;if(!v){toast('Выбери дату и время.');return;}date=new Date(v);future=date.getTime()>Date.now()+60000;}
+  else{date=new Date();future=false;}
+  current.date=date;current.scheduled=future;
+
+  if(currentSource==='pending'){
+    const i=pending.findIndex(x=>x.id===current.id);if(i>-1)pending.splice(i,1);
+    approved.push(current);currentSource='approved';
+  }
+  document.getElementById('post').classList.remove('on');
+  document.getElementById('news').value='';document.getElementById('vidPrompt').value='';
+
+  const hasTg=cfg.tgToken&&cfg.tgChat,hasMax=cfg.maxToken&&cfg.maxChat;
+  if(future){current.tg='plan';current.max='plan';toast('Запланировано на '+date.toLocaleDateString('ru-RU',{day:'2-digit',month:'long'})+' — в календаре.');}
+  else if(!hasTg&&!hasMax){current.tg='wait';current.max='wait';toast('Согласовано. Подключи ботов в «⚙ Каналы», чтобы отправлять.');}
+  else{
+    if(hasTg)current.tg=await sendTelegram(current)?'ok':'err';
+    if(hasMax)current.max=await sendMax(current)?'ok':'err';
+    const ok=(!hasTg||current.tg==='ok')&&(!hasMax||current.max==='ok');
+    toast(ok?'Согласовано и опубликовано ✅':'Отправила не везде — смотри статусы.');
+  }
+  current=null;currentSource=null;
+  renderPending();renderCalendar();
+}
+async function publishNow(id){
+  const item=approved.find(h=>h.id===id);if(!item)return;
+  const hasTg=cfg.tgToken&&cfg.tgChat,hasMax=cfg.maxToken&&cfg.maxChat;
+  if(!hasTg&&!hasMax){toast('Сначала подключи ботов в «⚙ Каналы».');return;}
+  item.scheduled=false;item.date=new Date();
+  if(hasTg)item.tg=await sendTelegram(item)?'ok':'err';
+  if(hasMax)item.max=await sendMax(item)?'ok':'err';
+  renderCalendar();openDay(selKey,true);toast('Отправлено.');
+}
+
+async function sendTelegram(item){try{
+  const photos=item.media.filter(m=>m.type==='photo'),video=item.media.find(m=>m.type==='video');
+  let url,body;
+  if(video){url='https://api.telegram.org/bot'+cfg.tgToken+'/sendVideo';body={chat_id:cfg.tgChat,video:video.url,caption:item.text};}
+  else if(photos.length>1){
+    url='https://api.telegram.org/bot'+cfg.tgToken+'/sendMediaGroup';
+    body={chat_id:cfg.tgChat,media:photos.slice(0,10).map((p,i)=>({type:'photo',media:p.url,caption:i===0?item.text:undefined}))};
+  }
+  else if(photos.length===1){url='https://api.telegram.org/bot'+cfg.tgToken+'/sendPhoto';body={chat_id:cfg.tgChat,photo:photos[0].url,caption:item.text};}
+  else{url='https://api.telegram.org/bot'+cfg.tgToken+'/sendMessage';body={chat_id:cfg.tgChat,text:item.text};}
+  const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const j=await r.json();return Array.isArray(j.result)?true:!!j.ok;}catch(e){console.error('TG',e);return false;}}
+async function sendMax(item){try{
+  const links=item.media.map(m=>m.url).join('\n');
+  const url='https://botapi.max.ru/messages?access_token='+encodeURIComponent(cfg.maxToken)+'&chat_id='+encodeURIComponent(cfg.maxChat);
+  const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:item.text+(links?'\n\n'+links:'')})});
+  return r.ok;}catch(e){console.error('MAX',e);return false;}}
+
+/* ── список «на согласование» ── */
+function renderPending(){
+  const box=document.getElementById('pendingList');
+  if(!pending.length){box.innerHTML='<div class="empty">Пусто. Сгенерируй пост — он появится здесь на согласование.</div>';return;}
+  box.innerHTML=pending.map(h=>{
+    const ph=h.media.find(m=>m.type==='photo')||h.media.find(m=>m.type==='video');
+    const thumb=ph?(ph.type==='video'?'<video class="thumb" src="'+ph.url+'"></video>':'<img class="thumb" src="'+ph.url+'" onerror="this.style.opacity=.3">'):'';
+    const nphoto=h.media.filter(m=>m.type==='photo').length;
+    return '<div class="hitem" onclick="openPending('+h.id+')">'+thumb+'<div class="body"><div class="meta">'
+      +'<span class="chip'+(h.aud==='video'?' v':'')+'">'+audLabel(h.aud)+'</span>'
+      +'<span class="st wait">ждёт согласования</span>'+(nphoto?'<span>📷 '+nphoto+'</span>':'')
+      +'</div><p>'+escapeHtml(h.text)+'</p></div><span class="go">открыть ›</span></div>';}).join('');
+}
+function openPending(id){const h=pending.find(x=>x.id===id);if(h)setEditor(h,'pending');}
+
+/* ── КАЛЕНДАРЬ (approved) ── */
+const MONTHS=['январь','февраль','март','апрель','май','июнь','июль','август','сентябрь','октябрь','ноябрь','декабрь'];
+const DOW=['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
+function dayKey(d){return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();}
+function audDot(a){return a==='partner'?'p':a==='client'?'c':'v';}
+function calNav(delta){if(delta===0){calRef=new Date();}else{calRef.setMonth(calRef.getMonth()+delta);}calRef.setDate(1);calRef.setHours(0,0,0,0);renderCalendar();}
+function renderCalendar(){
+  document.getElementById('calMon').textContent=MONTHS[calRef.getMonth()]+' '+calRef.getFullYear();
+  const grid=document.getElementById('calGrid');
+  let html=DOW.map(d=>'<div class="cal-dow">'+d+'</div>').join('');
+  const first=(new Date(calRef).getDay()+6)%7;
+  const days=new Date(calRef.getFullYear(),calRef.getMonth()+1,0).getDate();
+  for(let i=0;i<first;i++)html+='<div class="cal-cell blank"></div>';
+  const tKey=dayKey(new Date());
+  for(let d=1;d<=days;d++){
+    const date=new Date(calRef.getFullYear(),calRef.getMonth(),d),key=dayKey(date);
+    const posts=approved.filter(h=>h.date&&dayKey(h.date)===key);
+    const dots=[...new Set(posts.map(p=>audDot(p.aud)))].map(c=>'<span class="dot '+c+'"></span>').join('');
+    const cls='cal-cell'+(key===tKey?' today':'')+(key===selKey?' sel':'');
+    html+='<div class="'+cls+'" onclick="openDay(\''+key+'\')"><span class="dn">'+d+'</span>'
+      +(posts.length?'<span class="cnt">'+posts.length+'</span>':'')+'<span class="dots">'+dots+'</span></div>';
+  }
+  grid.innerHTML=html;
+  if(selKey)openDay(selKey,true);
+}
+function openDay(key,keepScroll){
+  selKey=key;
+  document.querySelectorAll('.cal-cell').forEach(c=>{const oc=c.getAttribute('onclick')||'';const m=oc.match(/openDay\('([^']+)'/);c.classList.toggle('sel',!!m&&m[1]===selKey);});
+  const posts=approved.filter(h=>h.date&&dayKey(h.date)===key).sort((a,b)=>a.date-b.date);
+  const det=document.getElementById('dayDetail');
+  const [y,m,d]=key.split('-').map(Number);
+  const title=new Date(y,m-1,d).toLocaleDateString('ru-RU',{day:'numeric',month:'long',year:'numeric'});
+  if(!posts.length){det.style.display='block';det.innerHTML='<h3>'+title+'</h3><div class="day-empty">На этот день согласованных постов нет.</div>';return;}
+  det.style.display='block';
+  det.innerHTML='<h3>'+title+' · постов: '+posts.length+'</h3>'+posts.map(h=>{
+    const ph=h.media.find(m=>m.type==='photo')||h.media.find(m=>m.type==='video');
+    const thumb=ph?(ph.type==='video'?'<video class="th" src="'+ph.url+'"></video>':'<img class="th" src="'+ph.url+'" onerror="this.style.opacity=.3">'):'<div class="th"></div>';
+    const canPub=(h.tg==='plan'||h.max==='plan'||h.tg==='wait'||h.max==='wait');
+    const pubBtn=canPub?'<button class="btn btn-ghost" style="padding:6px 12px;margin-top:6px" onclick="event.stopPropagation();publishNow('+h.id+')">Опубликовать сейчас</button>':'';
+    return '<div class="dp" onclick="openApproved('+h.id+')">'+thumb+'<div class="info">'
+      +'<div class="t">'+escapeHtml(h.text.slice(0,120))+(h.text.length>120?'…':'')+'</div>'
+      +'<div class="ch"><span class="chip'+(h.aud==='video'?' v':'')+'">'+audLabel(h.aud)+'</span>'
+      +'<span>'+h.date.toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})+'</span>'
+      +'<span>TG: '+stz(h.tg)+'</span><span>MAX: '+stz(h.max)+'</span></div>'+pubBtn+'</div><span class="go">открыть ›</span></div>';
+  }).join('');
+  if(!keepScroll)det.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+function openApproved(id){const h=approved.find(x=>x.id===id);if(h)setEditor(h,'approved');}
+
+/* ── утилиты ── */
+function audLabel(a){return a==='partner'?'Партнёрам':a==='client'?'Клиентам':'Видео';}
+function stz(s){return s==='ok'?'<span class="st ok">отправлено</span>':s==='err'?'<span class="st err">ошибка</span>':s==='plan'?'<span class="st plan">запланировано</span>':'<span class="st wait">ждёт</span>';}
+function toLocalInput(d){const p=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+'T'+p(d.getHours())+':'+p(d.getMinutes());}
+function parsePost(data){
+  const t=(data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('\n').replace(/```json|```/g,'');
+  const s=t.indexOf('{'),e=t.lastIndexOf('}');
+  if(s<0||e<=s)return null;
+  try{const o=JSON.parse(t.slice(s,e+1));return (o&&typeof o==='object')?o:null;}catch{return null;}
+}
+function toolInputs(data){return (data.content||[]).filter(b=>b.type==='mcp_tool_use'&&b.input&&(b.input.path||b.input.public_path)).map(b=>b.input.path||b.input.public_path);}
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function openSettings(){document.getElementById('settings').classList.add('on')}
+function closeSettings(){document.getElementById('settings').classList.remove('on')}
+function saveSettings(){cfg.tgToken=val('tgToken');cfg.tgChat=val('tgChat');cfg.maxToken=val('maxToken');cfg.maxChat=val('maxChat');closeSettings();toast('Настройки каналов сохранены.');}
+function val(id){return document.getElementById(id).value.trim();}
+document.getElementById('settings').addEventListener('click',e=>{if(e.target.id==='settings')closeSettings()});
+
+setTab('partner');renderPending();renderCalendar();
+</script>
+</body>
+</html>
