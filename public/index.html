@@ -59,13 +59,31 @@ textarea.news:focus{outline:2px solid var(--sprout);border-color:transparent}
 .post-body textarea{width:100%;min-height:200px;border:1px dashed var(--line);border-radius:10px;padding:14px;font:15px/1.6 'Inter',sans-serif;resize:vertical}
 .post-body textarea:focus{outline:2px solid var(--grain);border-color:transparent}
 .preview{margin-top:14px;display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.preview .cell{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--paper)}
+.preview .cell{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--paper);position:relative}
 .preview .cell .cap{font-size:10.5px;color:var(--ink-soft);padding:5px 8px;border-bottom:1px solid var(--line)}
 .preview img,.preview video{width:100%;display:block;height:120px;object-fit:cover;background:#000}
+.preview .rmphoto{position:absolute;top:4px;right:4px;width:22px;height:22px;border:none;border-radius:6px;background:rgba(28,38,31,.72);color:#fff;cursor:pointer;font-size:13px;line-height:1;display:flex;align-items:center;justify-content:center}
+.preview .rmphoto:hover{background:var(--danger)}
+.photobar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px}
+.photobar .pblabel{font-size:13px;font-weight:600;color:var(--ink-soft)}
+.photobar .photobtn{padding:7px 14px;font-size:13px}
+.photobar .miniload{display:none;align-items:center;gap:8px;font-size:12.5px;color:var(--ink-soft)}
+.photobar .miniload.on{display:flex}
 .sources{margin-top:14px;font-size:12.5px;color:var(--ink-soft)}
 .sources ul{list-style:none;margin-top:6px}
 .sources li{padding:3px 0 3px 18px;position:relative;word-break:break-all}
 .sources li::before{content:"⛁";position:absolute;left:0;color:var(--sprout)}
+.pcard{border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:14px;background:var(--paper)}
+.pcard .ph{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.pcard .pn{font-weight:700;font-size:15px;color:var(--field)}
+.pcard .pp{font-size:11.5px;color:var(--ink-soft);word-break:break-all}
+.pcard textarea{width:100%;min-height:150px;border:1px solid var(--line);border-radius:9px;padding:12px;font:13.5px/1.55 'Inter',sans-serif;resize:vertical;background:var(--card)}
+.pcard textarea:focus{outline:2px solid var(--sprout);border-color:transparent}
+.pcard .pfoot{display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap}
+.pcard .pstate{font-size:12px;color:var(--ink-soft)}
+.pcard .pstate.filled{color:var(--field);font-weight:600}
+.pcard .miniload{display:none;align-items:center;gap:8px;font-size:12.5px;color:var(--ink-soft)}
+.pcard .miniload.on{display:flex}
 .pending-note{margin-top:14px;background:#F6EEDB;border-radius:10px;padding:12px 14px;font-size:13px;color:#7A5D18}
 .sched-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:2px 20px 4px}
 .sched-bar>label{font-size:13px;font-weight:600;color:var(--ink-soft)}
@@ -107,6 +125,13 @@ h2.sec{font-family:'Prata',serif;font-size:20px;margin:34px 0 6px}
 .dot{width:7px;height:7px;border-radius:50%}
 .dot.p{background:var(--field)}.dot.c{background:var(--sprout)}.dot.v{background:var(--grain)}
 .cal-cell .cnt{position:absolute;top:6px;right:7px;font-size:10.5px;font-weight:700;color:var(--field);background:#EAF2E3;border-radius:6px;padding:1px 5px}
+.cal-cell.hasposts{background:#EAF2E3}
+.cal-cell.planned{background:linear-gradient(150deg,#FBEFC9,#DDECCF);outline:2px solid var(--grain);outline-offset:-2px;box-shadow:inset 0 0 0 1px rgba(201,155,63,.35)}
+.cal-cell.planned .dn{color:#6B4E12}
+.cal-cell.planned .cnt{background:var(--grain);color:#2B2410}
+.cal-cell .planbadge{font-size:9px;font-weight:700;color:#7A5D18;background:rgba(255,255,255,.7);border-radius:5px;padding:1px 4px;line-height:1.3;align-self:flex-start;white-space:nowrap;overflow:hidden;max-width:100%}
+.cal-cell.planned.sel,.cal-cell.hasposts.sel{outline:2px solid var(--sprout)}
+@media (max-width:560px){.cal-cell .planbadge{font-size:0;padding:3px}.cal-cell .planbadge::before{content:"📌";font-size:11px}}
 .day-detail{border-top:1px solid var(--line);padding:16px 18px;background:var(--paper)}
 .day-detail h3{font-size:14px;font-weight:700;margin-bottom:12px;color:var(--field)}
 .dp{display:flex;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:10px;cursor:pointer}
@@ -144,6 +169,7 @@ h2.sec{font-family:'Prata',serif;font-size:20px;margin:34px 0 6px}
     <button class="tab active" id="tab-partner" role="tab" onclick="setTab('partner')">Партнёрам<span>условия, лоты — деловым языком</span></button>
     <button class="tab" id="tab-client" role="tab" onclick="setTab('client')">Клиентам<span>про жизнь на земле — тепло</span></button>
     <button class="tab video" id="tab-video" role="tab" onclick="setTab('video')">🎬 Видеопродакшн<span>фото и видео по домам</span></button>
+    <button class="tab" id="tab-projects" role="tab" onclick="setTab('projects')">📁 Проекты<span>карточки для быстрой генерации</span></button>
   </div>
 </header>
 
@@ -174,6 +200,11 @@ h2.sec{font-family:'Prata',serif;font-size:20px;margin:34px 0 6px}
     <div class="loader" id="loaderVideo"><span class="seed"></span><span id="loaderVideoText">Готовлю кадр…</span></div>
   </section>
 
+  <section class="panel" id="panelProjects" style="display:none">
+    <p class="hint" style="margin-top:0">Карточка — это выжимка по проекту (локация, цена, комиссия, кадастры, условия…). Нажми «Обновить с Диска» — я один раз прочитаю материалы и заполню её. Дальше посты собираются из карточки <b>мгновенно, без похода на Диск</b>. Текст карточки можно править руками.</p>
+    <div id="projectsList"></div>
+  </section>
+
   <section class="post" id="post">
     <div class="post-head">
       <span id="draftTitle">На согласование · <span class="chip" id="postAud">Партнёрам</span></span>
@@ -181,6 +212,12 @@ h2.sec{font-family:'Prata',serif;font-size:20px;margin:34px 0 6px}
     </div>
     <div class="post-body">
       <textarea id="postText" aria-label="Текст поста"></textarea>
+      <div class="photobar" id="photoBar">
+        <span class="pblabel">🖼 Фото:</span>
+        <button class="btn btn-ghost photobtn" id="findPhotoBtn" onclick="findPhotos()">Найти на Диске</button>
+        <button class="btn btn-ghost photobtn" id="genPhotoBtn" onclick="genPhotos()">Сгенерировать</button>
+        <span class="miniload" id="photoLoad"><span class="seed"></span><span id="photoLoadText">Ищу фото…</span></span>
+      </div>
       <div class="preview" id="previewBox" style="display:none"></div>
       <div class="pending-note" id="pendingBox" style="display:none"></div>
       <div class="sources" id="sourcesBox" style="display:none"></div>
@@ -235,7 +272,7 @@ h2.sec{font-family:'Prata',serif;font-size:20px;margin:34px 0 6px}
 <div class="toast" id="toast"></div>
 
 <script>
-const YANDEX_MCP=""; // подставляется на сервере (YANDEX_MCP_URL)
+const YANDEX_MCP=""; // подставляется на сервере
 const HIGGS_MCP="";   // подставляется на сервере
 
 let tab='partner',vidFmt='both';
@@ -286,15 +323,13 @@ const PARTNER_TEMPLATE=`ФИРМЕННАЯ СТРУКТУРА поста для 
 
 function setTab(t){
   tab=t;
-  document.getElementById('tab-partner').classList.toggle('active',t==='partner');
-  document.getElementById('tab-client').classList.toggle('active',t==='client');
-  document.getElementById('tab-video').classList.toggle('active',t==='video');
-  document.getElementById('panelPost').style.display=t==='video'?'none':'block';
+  ['partner','client','video','projects'].forEach(x=>document.getElementById('tab-'+x).classList.toggle('active',t===x));
+  const isPost=(t==='partner'||t==='client');
+  document.getElementById('panelPost').style.display=isPost?'block':'none';
   document.getElementById('panelVideo').style.display=t==='video'?'block':'none';
+  document.getElementById('panelProjects').style.display=t==='projects'?'block':'none';
   document.getElementById('post').classList.remove('on');current=null;currentSource=null;
-  document.getElementById('postHint').innerHTML=t==='partner'
-    ?'Пусто — не страшно: пройдусь по <b>Яндекс.Диску</b>, соберу пост по фирменной структуре и приложу <b>4–5 реальных фото проекта</b> с Диска.'
-    :'Пусто — не страшно: соберу тёплый пост из материалов проекта на <b>Яндекс.Диске</b> и приложу фото.';
+  if(isPost)document.getElementById('postHint').innerHTML='Пост собирается <b>мгновенно</b> из карточек проектов. Напиши новость — я сам пойму, о каком проекте речь (по региону, названию, теме). Пусто — возьму подходящий проект сам. Карточки заполняются во вкладке <b>«Проекты»</b>.';
 }
 function pickFmt(el){document.querySelectorAll('#vidFormat .pick').forEach(p=>p.classList.remove('on'));el.classList.add('on');vidFmt=el.dataset.fmt;}
 function pickWhen(el){document.querySelectorAll('.sched-bar .pill').forEach(p=>p.classList.remove('on'));el.classList.add('on');whenMode=el.dataset.when;
@@ -311,12 +346,95 @@ function loader(which,on,lines){
 }
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),3800);}
 
-/* ── генерация поста: только текст, через метки (без JSON, без фото) ── */
-const DISK_MAP=`Карта Диска (навигируй сразу, не обходи всё дерево):
-Корень проектов: "/ГектарЪ. Развитие территорий"
-Регионы: "Московская обл", "Тверская область", "Тульская область"
-Проекты: "Светлая долина" (Тверская область), "Серебряные Пруды" (Московская обл), "Щёкинские берега" (Тульская область)
-Внутри проекта папки: Документы, Презентация, Генплан, Рендеры, Фотографии, Шахматка`;
+/* ── проекты (карточки) ── */
+const PROJECTS=[
+  {id:'svetlaya',name:'Светлая долина',region:'Тверская область',path:'/ГектарЪ. Развитие территорий/Тверская область/"Светлая долина"'},
+  {id:'serebro',name:'Серебряные пруды',region:'Московская область',path:'/ГектарЪ. Развитие территорий/Московская обл/"Серебряные пруды"'},
+  {id:'schekino',name:'Щёкинские берега',region:'Тульская область',path:'/ГектарЪ. Развитие территорий/Тульская область/"Щекинские берега"'}
+];
+const memStore={};
+const store={
+  async get(k){
+    try{if(window.storage){const r=await window.storage.get(k,false);return r?JSON.parse(r.value):null;}}catch(e){}
+    try{const v=localStorage.getItem(k);return v?JSON.parse(v):null;}catch(e){}
+    return (k in memStore)?memStore[k]:null;
+  },
+  async set(k,val){
+    memStore[k]=val;
+    try{if(window.storage){await window.storage.set(k,JSON.stringify(val),false);return;}}catch(e){}
+    try{localStorage.setItem(k,JSON.stringify(val));}catch(e){}
+  }
+};
+let cards={}; // {id: "текст карточки"}
+
+async function loadCards(){cards=(await store.get('gektar_cards'))||{};renderProjects();}
+async function saveCards(){await store.set('gektar_cards',cards);}
+
+function renderProjects(){
+  const box=document.getElementById('projectsList');
+  box.innerHTML=PROJECTS.map(p=>{
+    const val=cards[p.id]||'';
+    const filled=val.trim().length>0;
+    return `<div class="pcard">
+      <div class="ph"><div><div class="pn">${escapeHtml(p.name)}</div><div class="pp">${escapeHtml(p.region)} · ${escapeHtml(p.path)}</div></div>
+        <span class="pstate${filled?' filled':''}" id="pstate-${p.id}">${filled?'✓ карточка заполнена':'карточка пустая'}</span></div>
+      <textarea id="card-${p.id}" placeholder="Нажми «Обновить с Диска» — я заполню карточку. Или впиши факты вручную." oninput="onCardEdit('${p.id}')">${escapeHtml(val)}</textarea>
+      <div class="pfoot">
+        <button class="btn btn-main" style="padding:9px 16px" id="pbtn-${p.id}" onclick="updateCard('${p.id}')">🔄 Обновить с Диска</button>
+        <span class="miniload" id="pload-${p.id}"><span class="seed"></span><span id="ploadtext-${p.id}">Читаю материалы…</span></span>
+      </div></div>`;
+  }).join('');
+}
+function onCardEdit(id){cards[id]=document.getElementById('card-'+id).value;saveCards();
+  const st=document.getElementById('pstate-'+id);const f=cards[id].trim().length>0;st.textContent=f?'✓ карточка заполнена':'карточка пустая';st.classList.toggle('filled',f);}
+
+async function updateCard(id){
+  const p=PROJECTS.find(x=>x.id===id);if(!p)return;
+  const btn=document.getElementById('pbtn-'+id),ld=document.getElementById('pload-'+id),lt=document.getElementById('ploadtext-'+id);
+  btn.disabled=true;ld.classList.add('on');
+  const lines=['Открываю папку проекта…','Читаю краткое описание…','Собираю факты…','Готовлю карточку…'];let i=0;lt.textContent=lines[0];
+  const t=setInterval(()=>{i=(i+1)%lines.length;lt.textContent=lines[i];},2800);
+  try{
+    const d=await callGen({model:"claude-sonnet-4-6",max_tokens:5000,
+      mcp_servers:[{type:"url",url:YANDEX_MCP,name:"yandex-gektar"}],
+      messages:[{role:"user",content:`Собери структурированную КАРТОЧКУ проекта «ГектарЪ».
+Папка проекта: "${p.path}". Внутри: Документы, Презентация, Генплан, Рендеры, Фотографии, Шахматка.
+
+ЗАДАЧА:
+1) Найди файл краткого описания (в самой папке или в «Документы» — обычно "Краткое описание.docx").
+2) Прочитай его ТЕКСТ инструментом read_document (передай путь к файлу). НЕ используй get_download_link для чтения — только read_document.
+3) Если найдёшь шахматку — получи публичную ссылку через get_public_link.
+4) Из прочитанного текста извлеки факты и собери карточку. Только факты из документа, ничего не выдумывай; чего нет — ставь «—». Не пиши промежуточных комментариев.
+
+Формат:
+Проект: ${p.name}
+Регион: ${p.region}
+Локация: —
+Цена: —
+Комиссия партнёрам: —
+Условия: —
+Площадь проекта: —
+Кадастровые номера: —
+Назначение: —
+Размежевание: —
+Подходит под: —
+Драйверы роста: —
+Карта: —
+Ссылки: —
+
+Заверши ответ карточкой строго между метками, ничего после:
+===НАЧАЛО===
+<карточка>
+===КОНЕЦ===`}]});
+    const text=extractPost(d);
+    if(!text){toast('Не удалось собрать карточку. Если yandex-mcp ещё не передеплоен с чтением документов — подожди деплой на Railway, либо впиши факты вручную.');return;}
+    cards[id]=text;await saveCards();
+    const ta=document.getElementById('card-'+id);if(ta)ta.value=text;
+    onCardEdit(id);
+    toast(p.name+': карточка обновлена ✓');
+  }catch(e){console.error(e);toast('Не вышло: '+e.message);}
+  finally{clearInterval(t);btn.disabled=false;ld.classList.remove('on');}
+}
 
 async function callGen(body){
   const res=await fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
@@ -324,55 +442,118 @@ async function callGen(body){
   if(data.error)throw new Error(data.error.message||'Ошибка API');
   return data;
 }
-
-// берём ТОЛЬКО текст поста между метками; болтовню в чат не пускаем
 function extractPost(data){
   const all=(data.content||[]).filter(b=>b.type==='text').map(b=>(b.text||'')).join('\n\n');
   const m=all.match(/===\s*НАЧАЛО\s*===([\s\S]*?)===\s*КОНЕЦ\s*===/);
   return m&&m[1].trim()?m[1].trim():null;
 }
 
+/* ── генерация поста: мгновенно из карточек, без Диска ── */
 async function generatePost(variant){
   const news=document.getElementById('news').value.trim();
   const partner=tab==='partner';
-  loader('post',true,['Открываю Яндекс.Диск…','Читаю материалы проекта…','Пишу текст…']);
+  const filled=PROJECTS.filter(p=>(cards[p.id]||'').trim().length>0);
+  if(!filled.length){
+    toast('Сначала заполни карточку проекта во вкладке «Проекты» (кнопка «Обновить с Диска»).');
+    setTab('projects');return;
+  }
+  loader('post',true,['Определяю проект…','Пишу пост…']);
   document.getElementById('post').classList.remove('on');
   try{
-    const task=news?`Инфоповод от администратора: «${news}». Это основа поста.`
-      :`Инфоповода нет — выбери один из проектов и собери пост по его материалам.`;
-    const antiRepeat=variant&&lastText?`Предыдущий вариант не подошёл — сделай заметно другой (другой проект или другой акцент). Прошлый текст: «${lastText.slice(0,400)}»`:'';
+    const cardsBlock=filled.map(p=>`### ${p.name} (${p.region})\n${cards[p.id]}`).join('\n\n');
+    const pick=news
+      ? `Инфоповод от администратора: «${news}». Определи, о КАКОМ проекте речь (по региону, названию или теме) и пиши пост про него. Если явно не указан — возьми наиболее подходящий.`
+      : `Инфоповода нет — выбери любой из проектов ниже и напиши пост.`;
+    const antiRepeat=variant&&lastText?`Предыдущий вариант не подошёл — сделай заметно другой (другой акцент или другой проект). Прошлый текст: «${lastText.slice(0,400)}»`:'';
     const brief=partner
-      ? `Ты — SMM-редактор проекта «ГектарЪ» (девелопер загородных участков и посёлков). Пишешь пост для ПАРТНЁРОВ (агентов, риелторов) в фирменном стиле бренда.
+      ? `Ты — SMM-редактор «ГектарЪ». Пишешь пост для ПАРТНЁРОВ (агентов, риелторов) в фирменном стиле.\n\n${PARTNER_TEMPLATE}`
+      : `Ты — SMM-редактор «ГектарЪ». Пишешь пост для КЛИЕНТОВ (покупателей). Тон тёплый, живой, по-человечески: жизнь на своей земле, дом, природа, выгоды. Один мягкий призыв в конце. Без канцелярита. Факты — только из карточки.`;
 
-${PARTNER_TEMPLATE}`
-      : `Ты — SMM-редактор проекта «ГектарЪ». Пишешь пост для КЛИЕНТОВ (покупателей). Тон тёплый, живой, по-человечески: про жизнь на своей земле, дом, природу, выгоды. Один мягкий призыв в конце. Без канцелярита и агентского жаргона. Факты (цены/сроки) — только если реально есть в материалах.`;
-
-    const d=await callGen({model:"claude-sonnet-4-6",max_tokens:16000,
-      mcp_servers:[{type:"url",url:YANDEX_MCP,name:"yandex-gektar"}],
+    const d=await callGen({model:"claude-sonnet-4-6",max_tokens:4000,
       messages:[{role:"user",content:`${brief}
 
-${task}
+КАРТОЧКИ ПРОЕКТОВ (бери факты ТОЛЬКО отсюда, ничего не выдумывай):
+${cardsBlock}
+
+${pick}
 ${antiRepeat}
 
-${DISK_MAP}
-
-ЗАДАЧА: открой папку нужного проекта, при необходимости загляни в 1 ключевой материал (краткое описание в «Документы» или «Презентация»), ВЫПИШИ из него только нужные факты (цена, комиссия, кадастровые номера, площадь, коммуникации, локация) — НЕ пересказывай документ целиком и не цитируй его полностью. Затем напиши готовый текст поста. Фото не ищи — только текст. Не пиши промежуточных комментариев о своих действиях.
-
-САМОЕ ВАЖНОЕ: обязательно ЗАВЕРШИ ответ готовым постом, обёрнутым РОВНО в такие метки, и ничего после них:
+ЗАВЕРШИ ответ готовым постом между метками, ничего после:
 ===НАЧАЛО===
-<здесь весь текст поста как есть, со всеми переносами и эмодзи>
+<весь текст поста как есть, со всеми переносами и эмодзи>
 ===КОНЕЦ===`}]});
 
     const text=extractPost(d);
-    if(!text){
-      toast(d.stop_reason==='max_tokens'?'Не успел за проход — уточни проект в поле и жми ещё раз.':'Не получилось собрать текст. Попробуй ещё раз или уточни проект.');
-      return;
-    }
+    if(!text){toast('Не получилось собрать текст. Попробуй ещё раз.');return;}
     const item={id:seq++,text,media:[],origin:'yandex',aud:tab,renderNote:null,date:null,scheduled:false,tg:'wait',max:'wait'};
     pending.push(item);lastText=item.text;
     setEditor(item,'pending');renderPending();
   }catch(e){console.error(e);toast('Не вышло: '+e.message);}
   finally{loader('post',false);document.getElementById('regenBtn').style.display='inline-block';}
+}
+
+/* ── фото к посту ── */
+function photoLoad(on,txt){
+  const el=document.getElementById('photoLoad');el.classList.toggle('on',on);
+  if(txt)document.getElementById('photoLoadText').textContent=txt;
+  document.getElementById('findPhotoBtn').disabled=on;document.getElementById('genPhotoBtn').disabled=on;
+}
+function removeMedia(idx){if(!current)return;current.media.splice(idx,1);renderResult();renderPending();renderCalendar();}
+
+// какому проекту принадлежит текущий пост — по совпадению названия/региона в тексте
+function detectProject(){
+  const t=(current&&current.text||'').toLowerCase();
+  let best=null;
+  for(const p of PROJECTS){
+    const name=p.name.toLowerCase(), reg=p.region.toLowerCase().replace(' область','').replace(' обл','');
+    if(t.includes(name)||t.includes(name.replace('щёк','щек'))||t.includes(reg))return p;
+    if(!best&&(cards[p.id]||'').trim())best=p;
+  }
+  return best;
+}
+
+async function findPhotos(){
+  if(!current)return;
+  const p=detectProject();
+  if(!p){toast('Не понял, какой это проект. Заполни карточку во вкладке «Проекты».');return;}
+  photoLoad(true,'Ищу фото на Диске…');
+  try{
+    const d=await callGen({model:"claude-sonnet-4-6",max_tokens:20000,
+      mcp_servers:[{type:"url",url:YANDEX_MCP,name:"yandex-gektar"}],
+      messages:[{role:"user",content:`В папке "${p.path}/Фотографии" (если её нет — "${p.path}/Рендеры") выбери до 4 ИЗОБРАЖЕНИЙ (jpg/png, НЕ видео/не .MP4, по возможности не самые огромные). Для каждого получи картинку как data URL через get_image_data (НЕ get_download_link, НЕ get_public_link). Не пиши комментариев.
+Заверши ответ строго между метками, по одному data:URL в строке:
+===НАЧАЛО===
+<data:URL картинки 1>
+<data:URL картинки 2>
+===КОНЕЦ===`}]});
+    const block=extractPost(d)||'';
+    const urls=block.split(/\s+/).map(s=>s.trim()).filter(u=>/^data:image\//.test(u)||/^https?:/.test(u)).slice(0,5);
+    if(!urls.length){toast('В папке проекта не нашлось фото. Можно сгенерировать.');return;}
+    current.media=urls.map((u,i)=>({type:'photo',url:u,cap:'фото '+(i+1)}));
+    current.origin='yandex';
+    renderResult();renderPending();
+    toast(p.name+': добавлено фото — '+urls.length);
+  }catch(e){console.error(e);toast('Не вышло: '+e.message);}
+  finally{photoLoad(false);}
+}
+
+async function genPhotos(){
+  if(!current)return;
+  const p=detectProject();
+  const base=p?`Загородный участок и дом посёлка «${p.name}» (${p.region}, Россия). `:'Загородный участок и дом в России. ';
+  photoLoad(true,'Генерирую фото…');
+  try{
+    const prompt=base+'Реалистичная рекламная фотография: живописный вид на участки/дом, аккуратная природа, хорошая погода, тёплый свет. Без текста, надписей и логотипов.';
+    const r=await fetch('/api/image',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt})});
+    const data=await r.json();
+    if(data.error)throw new Error(data.error.message||'Ошибка генерации');
+    if(!data.image)throw new Error('Изображение не получено');
+    current.media.push({type:'photo',url:data.image,cap:'сгенерировано'});
+    current.origin='generated';
+    renderResult();renderPending();
+    toast('Фото сгенерировано ✓');
+  }catch(e){console.error(e);toast('Не вышло: '+e.message);}
+  finally{photoLoad(false);}
 }
 
 /* ── видеопродакшн ── */
@@ -439,10 +620,13 @@ function renderResult(){
 
   const pv=document.getElementById('previewBox');
   if(current.media.length){pv.style.display='grid';
-    pv.innerHTML=current.media.map(m=>{
+    pv.innerHTML=current.media.map((m,idx)=>{
       const inner=m.type==='video'?'<video src="'+m.url+'" controls playsinline></video>':'<img src="'+m.url+'" alt="" onerror="this.style.opacity=.3">';
-      return '<div class="cell"><div class="cap">'+m.cap+'</div>'+inner+'</div>';}).join('');
+      return '<div class="cell"><button class="rmphoto" title="Убрать" onclick="removeMedia('+idx+')">✕</button><div class="cap">'+m.cap+'</div>'+inner+'</div>';}).join('');
   }else pv.style.display='none';
+
+  // панель «Фото» — для постов (партнёрам/клиентам), не для видеопродакшна
+  document.getElementById('photoBar').style.display=(aud==='partner'||aud==='client')?'flex':'none';
 
   const pb=document.getElementById('pendingBox');
   if(current.renderNote){pb.style.display='block';pb.innerHTML='⏳ '+escapeHtml(current.renderNote.note)+' &nbsp; <button class="btn btn-ghost" style="padding:6px 12px" onclick="checkVideo()">Проверить готовность</button>';}
@@ -575,10 +759,13 @@ function renderCalendar(){
   for(let d=1;d<=days;d++){
     const date=new Date(calRef.getFullYear(),calRef.getMonth(),d),key=dayKey(date);
     const posts=approved.filter(h=>h.date&&dayKey(h.date)===key);
+    const planned=posts.some(p=>p.scheduled||p.tg==='plan'||p.max==='plan');
     const dots=[...new Set(posts.map(p=>audDot(p.aud)))].map(c=>'<span class="dot '+c+'"></span>').join('');
-    const cls='cal-cell'+(key===tKey?' today':'')+(key===selKey?' sel':'');
+    const cls='cal-cell'+(key===tKey?' today':'')+(key===selKey?' sel':'')+(planned?' planned':posts.length?' hasposts':'');
     html+='<div class="'+cls+'" onclick="openDay(\''+key+'\')"><span class="dn">'+d+'</span>'
-      +(posts.length?'<span class="cnt">'+posts.length+'</span>':'')+'<span class="dots">'+dots+'</span></div>';
+      +(posts.length?'<span class="cnt">'+posts.length+'</span>':'')
+      +(planned?'<span class="planbadge">📌 запланировано</span>':'')
+      +'<span class="dots">'+dots+'</span></div>';
   }
   grid.innerHTML=html;
   if(selKey)openDay(selKey,true);
@@ -625,7 +812,7 @@ function saveSettings(){cfg.tgToken=val('tgToken');cfg.tgChat=val('tgChat');cfg.
 function val(id){return document.getElementById(id).value.trim();}
 document.getElementById('settings').addEventListener('click',e=>{if(e.target.id==='settings')closeSettings()});
 
-setTab('partner');renderPending();renderCalendar();
+setTab('partner');renderPending();renderCalendar();loadCards();
 </script>
 </body>
 </html>
