@@ -196,6 +196,7 @@ h2.sec{font-family:'Onest',sans-serif;font-weight:700;font-size:20px;margin:36px
     <button class="tab" id="tab-client" role="tab" onclick="setTab('client')">Клиентам<span>про жизнь на земле — тепло</span></button>
     <button class="tab video" id="tab-video" role="tab" onclick="setTab('video')">🎬 Видеопродакшн<span>фото и видео по домам</span></button>
     <button class="tab" id="tab-projects" role="tab" onclick="setTab('projects')">📁 Проекты<span>карточки для быстрой генерации</span></button>
+    <button class="tab" id="tab-free" role="tab" onclick="setTab('free')">✎ Свободный пост<span>по своему промту</span></button>
   </div>
 </header>
 
@@ -229,6 +230,20 @@ h2.sec{font-family:'Onest',sans-serif;font-weight:700;font-size:20px;margin:36px
   <section class="panel" id="panelProjects" style="display:none">
     <p class="hint" style="margin-top:0">Карточка — это выжимка по проекту (локация, цена, комиссия, кадастры, условия…). Нажми «Обновить с Диска» — я один раз прочитаю материалы и заполню её. Дальше посты собираются из карточки <b>мгновенно, без похода на Диск</b>. Текст карточки можно править руками.</p>
     <div id="projectsList"></div>
+  </section>
+
+  <section class="panel" id="panelFree" style="display:none">
+    <label class="fld" for="freePrompt">Промт — что за пост нужен</label>
+    <textarea id="freePrompt" class="news" style="min-height:120px" placeholder="Например: короткий пост-поздравление с Новым годом от лица ГектарЪ; или разъяснение, чем ИЖС отличается от сельхоза, простыми словами; или анонс вебинара по инвестициям в землю…"></textarea>
+    <div class="row" id="freeAud">
+      <div class="pick on" data-aud="partner" onclick="pickFreeAud(this)">Тон: партнёрам</div>
+      <div class="pick" data-aud="client" onclick="pickFreeAud(this)">Тон: клиентам</div>
+    </div>
+    <p class="hint">Пишу пост строго по твоему промту — без Диска и карточек. Проект можешь указать прямо в промте, если нужен конкретный. Готовый пост попадёт «на согласование», как и обычные.</p>
+    <div class="actions">
+      <button class="btn btn-main" id="freeBtn" onclick="generateFree()">Сгенерировать по промту</button>
+    </div>
+    <div class="loader" id="loaderFree"><span class="seed"></span><span id="loaderFreeText">Пишу пост…</span></div>
   </section>
 
   <section class="post" id="post">
@@ -349,14 +364,17 @@ const PARTNER_TEMPLATE=`ФИРМЕННАЯ СТРУКТУРА поста для 
 
 function setTab(t){
   tab=t;
-  ['partner','client','video','projects'].forEach(x=>document.getElementById('tab-'+x).classList.toggle('active',t===x));
+  ['partner','client','video','projects','free'].forEach(x=>document.getElementById('tab-'+x).classList.toggle('active',t===x));
   const isPost=(t==='partner'||t==='client');
   document.getElementById('panelPost').style.display=isPost?'block':'none';
   document.getElementById('panelVideo').style.display=t==='video'?'block':'none';
   document.getElementById('panelProjects').style.display=t==='projects'?'block':'none';
+  document.getElementById('panelFree').style.display=t==='free'?'block':'none';
   document.getElementById('post').classList.remove('on');current=null;currentSource=null;
   if(isPost)document.getElementById('postHint').innerHTML='Пост собирается <b>мгновенно</b> из карточек проектов. Напиши новость — я сам пойму, о каком проекте речь (по региону, названию, теме). Пусто — возьму подходящий проект сам. Карточки заполняются во вкладке <b>«Проекты»</b>.';
 }
+let freeAud='partner';
+function pickFreeAud(el){document.querySelectorAll('#freeAud .pick').forEach(p=>p.classList.remove('on'));el.classList.add('on');freeAud=el.dataset.aud;}
 function pickFmt(el){document.querySelectorAll('#vidFormat .pick').forEach(p=>p.classList.remove('on'));el.classList.add('on');vidFmt=el.dataset.fmt;}
 function pickWhen(el){document.querySelectorAll('.sched-bar .pill').forEach(p=>p.classList.remove('on'));el.classList.add('on');whenMode=el.dataset.when;
   const inp=document.getElementById('schedAt');inp.style.display=whenMode==='time'?'inline-block':'none';
@@ -516,6 +534,41 @@ ${antiRepeat}
     setEditor(item,'pending');renderPending();
   }catch(e){console.error(e);toast('Не вышло: '+e.message);}
   finally{loader('post',false);document.getElementById('regenBtn').style.display='inline-block';}
+}
+
+/* ── свободный пост по промту (Claude API, без Диска и карточек) ── */
+function loaderFree(on){
+  const el=document.getElementById('loaderFree');el.classList.toggle('on',on);
+  document.getElementById('freeBtn').disabled=on;
+}
+async function generateFree(){
+  const prompt=document.getElementById('freePrompt').value.trim();
+  if(!prompt){toast('Напиши промт — что за пост нужен.');return;}
+  loaderFree(true);
+  document.getElementById('post').classList.remove('on');
+  try{
+    const toneLine=freeAud==='client'
+      ? 'Тон тёплый, живой, по-человечески — для клиентов (покупателей).'
+      : 'Тон деловой и конкретный — для партнёров (агентов, риелторов).';
+    const d=await callGen({model:"claude-sonnet-4-6",max_tokens:3000,
+      messages:[{role:"user",content:`Ты — SMM-редактор проекта «ГектарЪ» (девелопер загородных участков и посёлков). Напиши пост для канала СТРОГО по заданию.
+
+Задание: «${prompt}»
+
+${toneLine}
+Пиши естественно, живым языком, не роботом. Уместные эмодзи и короткие абзацы приветствуются. Не выдумывай конкретные цифры (цены, кадастры), если их нет в задании.
+
+Заверши ответ готовым постом строго между метками, ничего после:
+===НАЧАЛО===
+<весь текст поста как есть, со всеми переносами и эмодзи>
+===КОНЕЦ===`}]});
+    const text=extractPost(d);
+    if(!text){toast('Не получилось собрать пост. Уточни промт и попробуй ещё раз.');return;}
+    const item={id:seq++,text,media:[],origin:'free',aud:freeAud,renderNote:null,date:null,scheduled:false,tg:'wait',max:'wait'};
+    pending.push(item);
+    setEditor(item,'pending');renderPending();
+  }catch(e){console.error(e);toast('Не вышло: '+e.message);}
+  finally{loaderFree(false);}
 }
 
 /* ── фото к посту ── */
