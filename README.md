@@ -29,3 +29,19 @@ npm install
 ANTHROPIC_API_KEY=xxx npm start
 # открыть http://localhost:3000
 ```
+
+## Каналы публикации (боты) — переменные окружения
+Публикация идёт через `/api/publish`, маршрут по аудитории поста (партнёрам/клиентам; видео → как партнёрам).
+
+Telegram:
+- `TG_TOKEN_PARTNER`, `TG_CHAT_PARTNER` — бот и канал для партнёров
+- `TG_TOKEN_CLIENT`, `TG_CHAT_CLIENT` — бот и канал для клиентов
+- `TG_TOKEN` — общий токен-фолбэк, если бот один на оба канала (тогда задай только чаты)
+
+MAX:
+- `MAX_TOKEN_PARTNER`, `MAX_CHAT_PARTNER`
+- `MAX_TOKEN_CLIENT`, `MAX_CHAT_CLIENT`
+- `MAX_TOKEN` — общий фолбэк
+
+Как получить: токен Telegram-бота — у @BotFather; ID канала — добавь бота админом в канал и возьми chat_id (например через @getidsbot или API getUpdates). MAX — токен у @MasterBot в MAX, chat_id из чата/канала.
+Заданы только партнёрские переменные — клиентские посты просто не отправятся (статус «ждёт»), и наоборот.

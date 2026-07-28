@@ -538,27 +538,34 @@ function detectProject(){
   return best;
 }
 
+// адрес картинки: в артефакте — прямой /img на yandex-mcp; на сервере — прокси /api/img
+function imgUrl(path){
+  if(YANDEX_MCP) return YANDEX_MCP.replace('/mcp/','/img/')+'?path='+encodeURIComponent(path);
+  return '/api/img?path='+encodeURIComponent(path);
+}
+
 async function findPhotos(){
   if(!current)return;
   const p=detectProject();
   if(!p){toast('Не понял, какой это проект. Заполни карточку во вкладке «Проекты».');return;}
   photoLoad(true,'Ищу фото на Диске…');
   try{
-    const d=await callGen({model:"claude-sonnet-4-6",max_tokens:20000,
+    // просим у агента ТОЛЬКО пути к файлам (дёшево), картинки НЕ через модель
+    const d=await callGen({model:"claude-sonnet-4-6",max_tokens:2000,
       mcp_servers:[{type:"url",url:YANDEX_MCP,name:"yandex-gektar"}],
-      messages:[{role:"user",content:`В папке "${p.path}/Фотографии" (если её нет — "${p.path}/Рендеры") выбери до 4 ИЗОБРАЖЕНИЙ (jpg/png, НЕ видео/не .MP4, по возможности не самые огромные). Для каждого получи картинку как data URL через get_image_data (НЕ get_download_link, НЕ get_public_link). Не пиши комментариев.
-Заверши ответ строго между метками, по одному data:URL в строке:
+      messages:[{role:"user",content:`Выведи список файлов в папке "${p.path}/Фотографии" (если её нет — "${p.path}/Рендеры") через list_files. Выбери до 5 ИЗОБРАЖЕНИЙ (расширение .jpg/.jpeg/.png, НЕ .mp4/видео). Не читай сами файлы, не делай ссылок — нужны только пути.
+Заверши ответ строго между метками, по одному ПОЛНОМУ пути к файлу в строке:
 ===НАЧАЛО===
-<data:URL картинки 1>
-<data:URL картинки 2>
+<путь к файлу 1>
+<путь к файлу 2>
 ===КОНЕЦ===`}]});
     const block=extractPost(d)||'';
-    const urls=block.split(/\s+/).map(s=>s.trim()).filter(u=>/^data:image\//.test(u)||/^https?:/.test(u)).slice(0,5);
-    if(!urls.length){toast('В папке проекта не нашлось фото. Можно сгенерировать.');return;}
-    current.media=urls.map((u,i)=>({type:'photo',url:u,cap:'фото '+(i+1)}));
+    const paths=block.split('\n').map(s=>s.trim().replace(/^disk:/,'')).filter(s=>/\.(jpe?g|png|webp)$/i.test(s)).slice(0,5);
+    if(!paths.length){toast('В папке проекта не нашлось фото. Можно сгенерировать.');return;}
+    current.media=paths.map((pt,i)=>({type:'photo',url:imgUrl(pt),path:pt,cap:'фото '+(i+1)}));
     current.origin='yandex';
     renderResult();renderPending();
-    toast(p.name+': добавлено фото — '+urls.length);
+    toast(p.name+': добавлено фото — '+paths.length);
   }catch(e){console.error(e);toast('Не вышло: '+e.message);}
   finally{photoLoad(false);}
 }
@@ -713,26 +720,41 @@ async function approve(){
   document.getElementById('post').classList.remove('on');
   document.getElementById('news').value='';document.getElementById('vidPrompt').value='';
 
-  const hasTg=cfg.tgToken&&cfg.tgChat,hasMax=cfg.maxToken&&cfg.maxChat;
   if(future){current.tg='plan';current.max='plan';toast('Запланировано на '+date.toLocaleDateString('ru-RU',{day:'2-digit',month:'long'})+' — в календаре.');}
-  else if(!hasTg&&!hasMax){current.tg='wait';current.max='wait';toast('Согласовано. Подключи ботов в «⚙ Каналы», чтобы отправлять.');}
   else{
-    if(hasTg)current.tg=await sendTelegram(current)?'ok':'err';
-    if(hasMax)current.max=await sendMax(current)?'ok':'err';
-    const ok=(!hasTg||current.tg==='ok')&&(!hasMax||current.max==='ok');
-    toast(ok?'Согласовано и опубликовано ✅':'Отправила не везде — смотри статусы.');
+    const res=await publishItem(current);
+    if(res.mode==='none'){current.tg='wait';current.max='wait';toast('Согласовано, ждёт отправки. Подключи каналы (Railway или «⚙ Каналы»).');}
+    else{current.tg=res.tg;current.max=res.max;
+      const ok=(res.tg!=='err')&&(res.max!=='err');
+      toast(ok?'Согласовано и опубликовано ✅':'Отправила не везде — смотри статусы.');}
   }
   current=null;currentSource=null;
   renderPending();renderCalendar();
 }
 async function publishNow(id){
   const item=approved.find(h=>h.id===id);if(!item)return;
-  const hasTg=cfg.tgToken&&cfg.tgChat,hasMax=cfg.maxToken&&cfg.maxChat;
-  if(!hasTg&&!hasMax){toast('Сначала подключи ботов в «⚙ Каналы».');return;}
   item.scheduled=false;item.date=new Date();
-  if(hasTg)item.tg=await sendTelegram(item)?'ok':'err';
-  if(hasMax)item.max=await sendMax(item)?'ok':'err';
+  const res=await publishItem(item);
+  if(res.mode==='none'){toast('Сначала подключи каналы (Railway или «⚙ Каналы»).');return;}
+  item.tg=res.tg;item.max=res.max;
   renderCalendar();openDay(selKey,true);toast('Отправлено.');
+}
+
+// публикация: сначала пробуем бэкенд (каналы из Railway, маршрут по аудитории),
+// если бэкенда нет (артефакт) — фолбэк на токены из «⚙ Каналы»
+async function publishItem(item){
+  try{
+    const r=await fetch('/api/publish',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({aud:item.aud,text:item.text,media:item.media})});
+    if(r.ok){const j=await r.json();
+      if(j.tg==='skip'&&j.max==='skip')return {mode:'none'};
+      return {mode:'server',tg:j.tg==='skip'?'wait':j.tg,max:j.max==='skip'?'wait':j.max};}
+  }catch(e){/* нет бэкенда — идём в фолбэк */}
+  const hasTg=cfg.tgToken&&cfg.tgChat,hasMax=cfg.maxToken&&cfg.maxChat;
+  if(!hasTg&&!hasMax)return {mode:'none'};
+  const tg=hasTg?(await sendTelegram(item)?'ok':'err'):'wait';
+  const max=hasMax?(await sendMax(item)?'ok':'err'):'wait';
+  return {mode:'local',tg,max};
 }
 
 async function sendTelegram(item){try{

@@ -81,5 +81,84 @@ app.post('/api/image', async (req, res) => {
   }
 });
 
+// Прокси картинок с Диска для задеплоенного сайта (в браузере адрес yandex-mcp скрыт)
+app.get('/api/img', async (req, res) => {
+  const base = process.env.YANDEX_MCP_URL;
+  if (!base) return res.status(500).send('YANDEX_MCP_URL не задан');
+  const imgUrl = base.replace('/mcp/', '/img/') + '?path=' + encodeURIComponent(req.query.path || '');
+  try {
+    const r = await fetch(imgUrl);
+    const buf = Buffer.from(await r.arrayBuffer());
+    res.set('Content-Type', r.headers.get('content-type') || 'image/jpeg');
+    res.set('Cache-Control', 'public, max-age=3600');
+    res.status(r.status).send(buf);
+  } catch (e) {
+    res.status(500).send(String(e && e.message || e));
+  }
+});
+
+// ── Публикация в каналы. Маршрут по аудитории: partner / client (video → partner). ──
+// Переменные окружения (per-audience, с общим фолбэком):
+//   TG_TOKEN_PARTNER / TG_TOKEN_CLIENT  (или общий TG_TOKEN)
+//   TG_CHAT_PARTNER  / TG_CHAT_CLIENT
+//   MAX_TOKEN_PARTNER / MAX_TOKEN_CLIENT (или общий MAX_TOKEN)
+//   MAX_CHAT_PARTNER  / MAX_CHAT_CLIENT
+function dataUrlToBlob(dataUrl) {
+  const m = /^data:([^;]+);base64,(.*)$/.exec(dataUrl);
+  if (!m) return null;
+  return { blob: new Blob([Buffer.from(m[2], 'base64')], { type: m[1] }), type: m[1] };
+}
+async function tgSend(token, chat, text, media) {
+  const api = (m) => `https://api.telegram.org/bot${token}/${m}`;
+  const photos = (media || []).filter((x) => x.type === 'photo');
+  const video = (media || []).find((x) => x.type === 'video');
+  try {
+    if (video) {
+      const r = await fetch(api('sendVideo'), { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ chat_id: chat, video: video.url, caption: text }) });
+      return !!(await r.json()).ok;
+    }
+    // одиночное сгенерированное фото приходит как data URL — грузим как файл
+    if (photos.length === 1 && photos[0].url.startsWith('data:')) {
+      const d = dataUrlToBlob(photos[0].url);
+      const fd = new FormData();
+      fd.append('chat_id', chat); fd.append('caption', text);
+      fd.append('photo', d.blob, 'photo.png');
+      const r = await fetch(api('sendPhoto'), { method: 'POST', body: fd });
+      return !!(await r.json()).ok;
+    }
+    const httpPhotos = photos.filter((p) => /^https?:/.test(p.url));
+    if (httpPhotos.length > 1) {
+      const r = await fetch(api('sendMediaGroup'), { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ chat_id: chat, media: httpPhotos.slice(0, 10).map((p, i) => ({ type: 'photo', media: p.url, caption: i === 0 ? text : undefined })) }) });
+      const j = await r.json(); return Array.isArray(j.result) ? true : !!j.ok;
+    }
+    if (httpPhotos.length === 1) {
+      const r = await fetch(api('sendPhoto'), { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ chat_id: chat, photo: httpPhotos[0].url, caption: text }) });
+      return !!(await r.json()).ok;
+    }
+    const r = await fetch(api('sendMessage'), { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ chat_id: chat, text }) });
+    return !!(await r.json()).ok;
+  } catch (e) { console.error('TG', e); return false; }
+}
+async function maxSend(token, chat, text, media) {
+  try {
+    const links = (media || []).map((m) => m.url).filter((u) => /^https?:/.test(u)).join('\n');
+    const url = 'https://botapi.max.ru/messages?access_token=' + encodeURIComponent(token) + '&chat_id=' + encodeURIComponent(chat);
+    const r = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ text: text + (links ? '\n\n' + links : '') }) });
+    return r.ok;
+  } catch (e) { console.error('MAX', e); return false; }
+}
+app.post('/api/publish', async (req, res) => {
+  const { aud, text, media } = req.body || {};
+  const A = aud === 'client' ? 'CLIENT' : 'PARTNER';
+  const tgToken = process.env['TG_TOKEN_' + A] || process.env.TG_TOKEN;
+  const tgChat = process.env['TG_CHAT_' + A];
+  const maxToken = process.env['MAX_TOKEN_' + A] || process.env.MAX_TOKEN;
+  const maxChat = process.env['MAX_CHAT_' + A];
+  const out = { tg: 'skip', max: 'skip', audience: A.toLowerCase() };
+  if (tgToken && tgChat) out.tg = (await tgSend(tgToken, tgChat, text || '', media || [])) ? 'ok' : 'err';
+  if (maxToken && maxChat) out.max = (await maxSend(maxToken, maxChat, text || '', media || [])) ? 'ok' : 'err';
+  res.json(out);
+});
+
 const port = process.env.PORT || 3000;
 app.listen(port, () => console.log('ГектарЪ content-center up on :' + port));
