@@ -235,7 +235,7 @@ h2.sec{font-family:'Prata',serif;font-size:20px;margin:34px 0 6px}
 <div class="toast" id="toast"></div>
 
 <script>
-const YANDEX_MCP=""; // адрес yandex-mcp с токеном хранится секретом на сервере (YANDEX_MCP_URL)
+const YANDEX_MCP=""; // подставляется на сервере (YANDEX_MCP_URL)
 const HIGGS_MCP="";   // подставляется на сервере
 
 let tab='partner',vidFmt='both';
@@ -311,54 +311,64 @@ function loader(which,on,lines){
 }
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),3800);}
 
-/* ── генерация поста ── */
+/* ── генерация поста: только текст, через метки (без JSON, без фото) ── */
+const DISK_MAP=`Карта Диска (навигируй сразу, не обходи всё дерево):
+Корень проектов: "/ГектарЪ. Развитие территорий"
+Регионы: "Московская обл", "Тверская область", "Тульская область"
+Проекты: "Светлая долина" (Тверская область), "Серебряные Пруды" (Московская обл), "Щёкинские берега" (Тульская область)
+Внутри проекта папки: Документы, Презентация, Генплан, Рендеры, Фотографии, Шахматка`;
+
+async function callGen(body){
+  const res=await fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+  const data=await res.json();
+  if(data.error)throw new Error(data.error.message||'Ошибка API');
+  return data;
+}
+
+// берём ТОЛЬКО текст поста между метками; болтовню в чат не пускаем
+function extractPost(data){
+  const all=(data.content||[]).filter(b=>b.type==='text').map(b=>(b.text||'')).join('\n\n');
+  const m=all.match(/===\s*НАЧАЛО\s*===([\s\S]*?)===\s*КОНЕЦ\s*===/);
+  return m&&m[1].trim()?m[1].trim():null;
+}
+
 async function generatePost(variant){
   const news=document.getElementById('news').value.trim();
   const partner=tab==='partner';
-  loader('post',true,['Открываю Яндекс.Диск…','Смотрю папку проекта…','Собираю по структуре…','Подбираю 4–5 фото…','Пишу текст…']);
+  loader('post',true,['Открываю Яндекс.Диск…','Читаю материалы проекта…','Пишу текст…']);
   document.getElementById('post').classList.remove('on');
   try{
-    const task=news?`Инфоповод от администратора: «${news}». Это основа поста. Загляни в папку проекта на Яндекс.Диске за фактами и фото.`
-      :`Инфоповода нет. Изучи Яндекс.Диск: list_files по корню, выбери папку проекта («Щёкинские берега», «Светлая Долина», «Серебряные Пруды» и т.п.), посмотри содержимое и собери пост на основе реальных материалов.`;
+    const task=news?`Инфоповод от администратора: «${news}». Это основа поста.`
+      :`Инфоповода нет — выбери один из проектов и собери пост по его материалам.`;
     const antiRepeat=variant&&lastText?`Предыдущий вариант не подошёл — сделай заметно другой (другой проект или другой акцент). Прошлый текст: «${lastText.slice(0,400)}»`:'';
     const brief=partner
       ? `Ты — SMM-редактор проекта «ГектарЪ» (девелопер загородных участков и посёлков). Пишешь пост для ПАРТНЁРОВ (агентов, риелторов) в фирменном стиле бренда.
 
-${PARTNER_TEMPLATE}
+${PARTNER_TEMPLATE}`
+      : `Ты — SMM-редактор проекта «ГектарЪ». Пишешь пост для КЛИЕНТОВ (покупателей). Тон тёплый, живой, по-человечески: про жизнь на своей земле, дом, природу, выгоды. Один мягкий призыв в конце. Без канцелярита и агентского жаргона. Факты (цены/сроки) — только если реально есть в материалах.`;
+
+    const d=await callGen({model:"claude-sonnet-4-6",max_tokens:16000,
+      mcp_servers:[{type:"url",url:YANDEX_MCP,name:"yandex-gektar"}],
+      messages:[{role:"user",content:`${brief}
 
 ${task}
 ${antiRepeat}
 
-ФОТО: приложи 4–5 фотографий проекта. Открой папку проекта на Яндекс.Диске, выбери 4–5 подходящих фото (участки, вид на воду, генплан/шахматка, дома) и получи публичные ссылки через get_public_link. Если в папке меньше — используй сколько есть; если фото нет совсем — сгенерируй 1–2 уместных через hexvild generate_image.`
-      : `Ты — SMM-редактор проекта «ГектарЪ». Пишешь пост для КЛИЕНТОВ (покупателей). Тон тёплый, живой, по-человечески: про жизнь на своей земле, дом, природу, выгоды. Один мягкий призыв в конце. Без канцелярита и агентского жаргона.
+${DISK_MAP}
 
-${task}
-${antiRepeat}
+ЗАДАЧА: открой папку нужного проекта, при необходимости загляни в 1 ключевой материал (краткое описание в «Документы» или «Презентация»), ВЫПИШИ из него только нужные факты (цена, комиссия, кадастровые номера, площадь, коммуникации, локация) — НЕ пересказывай документ целиком и не цитируй его полностью. Затем напиши готовый текст поста. Фото не ищи — только текст. Не пиши промежуточных комментариев о своих действиях.
 
-ФОТО: приложи 2–4 красивых фото проекта с Яндекс.Диска (get_public_link); если нет — сгенерируй уместное через hexvild generate_image. Факты (цены/сроки) — только если реально есть в материалах.`;
+САМОЕ ВАЖНОЕ: обязательно ЗАВЕРШИ ответ готовым постом, обёрнутым РОВНО в такие метки, и ничего после них:
+===НАЧАЛО===
+<здесь весь текст поста как есть, со всеми переносами и эмодзи>
+===КОНЕЦ===`}]});
 
-    const res=await fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:8000,
-        mcp_servers:[{type:"url",url:YANDEX_MCP,name:"yandex-gektar"},{type:"url",url:HIGGS_MCP,name:"hexvild"}],
-        messages:[{role:"user",content:brief+`
-
-РАБОТАЙ ЭФФЕКТИВНО (это важно):
-- Не пиши промежуточных комментариев о своих действиях — они не нужны.
-- Если проект назван — сразу открой ЕГО папку (например /ГектарЪ. Развитие территорий/Тверская область/"Светлая долина"), не обходи всё дерево диска.
-- За фото зайди в подпапку «Фотографии» (или «Генплан») проекта, возьми 4–5 файлов и получи публичные ссылки через get_public_link. Не открывай десятки папок.
-- ПОСЛЕДНИМ сообщением верни ТОЛЬКО валидный JSON и больше НИЧЕГО (без пояснений, без markdown):
-{"text":"готовый текст поста","photos":["url1","url2","url3","url4","url5"],"generated":false,"sources":["пути с Диска"]}`}]})});
-    const data=await res.json();if(data.error)throw new Error(data.error.message||'Ошибка API');
-    const p=parsePost(data);
-    if(!p||!(p.text||'').trim()){
-      toast(data.stop_reason==='max_tokens'
-        ?'Не успел собрать за один проход. Уточни проект в поле выше и жми ещё раз.'
-        :'Не получилось собрать пост. Попробуй ещё раз или уточни проект.');
+    const text=extractPost(d);
+    if(!text){
+      toast(d.stop_reason==='max_tokens'?'Не успел за проход — уточни проект в поле и жми ещё раз.':'Не получилось собрать текст. Попробуй ещё раз или уточни проект.');
       return;
     }
-    const urls=(p.photos||[]).filter(u=>u&&u!=='null').slice(0,6);
-    const media=urls.map((u,i)=>({type:'photo',url:u,cap:(p.generated?'фото · генерация':'фото '+(i+1))}));
-    const item={id:seq++,text:p.text.trim(),media,sources:[...new Set([...(p.sources||[]),...toolInputs(data)])].filter(Boolean),aud:tab,renderNote:null,date:null,scheduled:false,tg:'wait',max:'wait'};
+    const item={id:seq++,text,media:[],origin:'yandex',aud:tab,renderNote:null,date:null,scheduled:false,tg:'wait',max:'wait'};
     pending.push(item);lastText=item.text;
     setEditor(item,'pending');renderPending();
   }catch(e){console.error(e);toast('Не вышло: '+e.message);}
@@ -393,7 +403,7 @@ ${steps}
     if(p.video_url&&p.video_url!=='null')media.push({type:'video',url:p.video_url,cap:'видео'});
     const note=(p.pending&&p.pending!=='null')?{note:p.pending,jobs:p.job_ids||[]}:null;
     if(!media.length&&!note){toast(data.stop_reason==='max_tokens'?'Студия не успела за один проход — попробуй ещё раз.':'Студия не вернула медиа — переформулируй запрос.');return;}
-    const item={id:seq++,text:(p.caption||prompt).trim(),media,sources:[...new Set([...(p.sources||[]),...toolInputs(data)])].filter(Boolean),aud:'video',
+    const item={id:seq++,text:(p.caption||prompt).trim(),media,origin:'generated',aud:'video',
       renderNote:note,date:null,scheduled:false,tg:'wait',max:'wait'};
     pending.push(item);setEditor(item,'pending');renderPending();
   }catch(e){console.error(e);toast('Не вышло: '+e.message);}
@@ -439,8 +449,13 @@ function renderResult(){
   else pb.style.display='none';
 
   const sb=document.getElementById('sourcesBox');
-  if(current.sources&&current.sources.length){sb.style.display='block';sb.innerHTML='Источники на Яндекс.Диске:<ul>'+current.sources.map(s=>'<li>'+escapeHtml(s)+'</li>').join('')+'</ul>';}
-  else sb.style.display='none';
+  const np=current.media.filter(m=>m.type==='photo').length;
+  const nv=current.media.filter(m=>m.type==='video').length;
+  if(np||nv){
+    const parts=[];if(np)parts.push(np+(np===1?' фото':' фото'));if(nv)parts.push(nv+' видео');
+    const src=current.origin==='generated'?'сгенерировано':'с Яндекс.Диска';
+    sb.style.display='block';sb.innerHTML='📎 '+parts.join(' + ')+' — '+src;
+  }else sb.style.display='none';
 
   // дата: по умолчанию «сейчас», либо время существующего запланированного
   if(currentSource==='approved'&&current.scheduled&&current.date){
