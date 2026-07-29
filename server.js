@@ -62,12 +62,13 @@ app.post('/api/image', async (req, res) => {
   try {
     const r = await fetch('https://api.openai.com/v1/images/generations', {
       method: 'POST',
-      headers: { 'content-type': 'application/json', authorization: 'Bearer ' + key },
+      headers: { 'content-type': 'application/json', authorization: 'Bearer ' + key.trim() },
       body: JSON.stringify({ model, prompt, size: '1536x1024', n: 1 })
     });
     const data = await r.json();
     if (!r.ok) {
-      return res.status(r.status).json({ error: { message: (data.error && data.error.message) || 'OpenAI error' } });
+      console.log('OpenAI image error', r.status, 'model=' + model, JSON.stringify(data.error || data));
+      return res.status(r.status).json({ error: { message: (data.error && data.error.message) || ('OpenAI error ' + r.status) } });
     }
     const d0 = data.data && data.data[0];
     // gpt-image-1 отдаёт b64_json; на всякий случай поддержим и url
