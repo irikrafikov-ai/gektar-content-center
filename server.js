@@ -165,14 +165,18 @@ function toPlain(src) {
 }
 async function maxSend(token, chat, text, media) {
   try {
-    // нормализация chat_id: из ссылки max.ru/... берём хвост; иначе оставляем как есть
+    // нормализация chat_id: из ссылки max.ru/... берём число; иначе оставляем как есть
     let chatId = String(chat || '').trim();
     const mm = chatId.match(/max\.ru\/[^/]*\/(-?\d+)/) || chatId.match(/(-?\d{5,})/);
     if (mm) chatId = mm[1];
     const links = (media || []).map((m) => m.url).filter((u) => /^https?:/.test(u)).join('\n');
-    const url = 'https://botapi.max.ru/messages?access_token=' + encodeURIComponent(token) + '&chat_id=' + encodeURIComponent(chatId);
+    const url = 'https://botapi.max.ru/messages?chat_id=' + encodeURIComponent(chatId);
     const body = toPlain(text) + (links ? '\n\n' + links : '');
-    const r = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ text: body }) });
+    const r = await fetch(url, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ text: body })
+    });
     let j = null; try { j = await r.json(); } catch (_) {}
     console.log('MAX response', r.status, JSON.stringify(j));
     return r.ok && !(j && (j.code || j.error));
