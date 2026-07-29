@@ -164,34 +164,79 @@ function toPlain(src) {
     .replace(/(^|[\s(])\*([^\s*][^*\n]*?)\*(?=[\s).,!?:;]|$)/g, '$1$2')
     .replace(/(^|[\s(])_([^\s_][^_\n]*?)_(?=[\s).,!?:;]|$)/g, '$1$2');
 }
+// байты картинки: из data:URL (base64) или по http-ссылке (с Диска)
+async function fetchImageBytes(u) {
+  try {
+    if (u.startsWith('data:')) { const m = /^data:[^;]+;base64,(.*)$/.exec(u); return m ? Buffer.from(m[1], 'base64') : null; }
+    const r = await fetch(u); if (!r.ok) return null; return Buffer.from(await r.arrayBuffer());
+  } catch (_) { return null; }
+}
+// запрос к MAX с перебором способов авторизации; возвращает первый успешный
+async function maxAuthFetch(url, init, clean) {
+  const auths = [{ Authorization: 'Bearer ' + clean }, { Authorization: clean }, { 'X-Access-Token': clean }];
+  let last = { ok: false };
+  for (const a of auths) {
+    const r = await fetch(url, { ...init, headers: { ...(init.headers || {}), ...a } });
+    let j = null; try { j = await r.json(); } catch (_) {}
+    last = { ok: r.ok && !(j && (j.code || j.error)), status: r.status, j };
+    if (last.ok) return last;
+  }
+  return last;
+}
+// загрузка одной картинки в MAX: getUploadUrl -> upload bytes -> payload вложения
+async function maxUploadImage(clean, bytes) {
+  const u = await maxAuthFetch('https://botapi.max.ru/uploads?type=image', { method: 'POST' }, clean);
+  if (!u.ok || !u.j || !u.j.url) { console.log('MAX upload-url fail', u.status, JSON.stringify(u.j)); return null; }
+  try {
+    const fd = new FormData();
+    fd.append('data', new Blob([bytes], { type: 'image/png' }), 'photo.png');
+    const r2 = await fetch(u.j.url, { method: 'POST', body: fd });
+    let j2 = null; try { j2 = await r2.json(); } catch (_) {}
+    if (!r2.ok || !j2) { console.log('MAX upload-data fail', r2.status, JSON.stringify(j2)); return null; }
+    return j2; // {photos:{...}} или {token:...} — целиком как payload вложения
+  } catch (e) { console.log('MAX upload-data err', String(e && e.message || e)); return null; }
+}
 async function maxSend(token, chat, text, media) {
   try {
     const clean = String(token || '').trim().replace(/^["'`]+|["'`]+$/g, '').replace(/^Bearer\s+/i, '').trim();
     let chatId = String(chat || '').trim();
     const mm = chatId.match(/max\.ru\/[^/]*\/(-?\d+)/) || chatId.match(/(-?\d{5,})/);
     if (mm) chatId = mm[1];
-    const links = (media || []).map((m) => m.url).filter((u) => /^https?:/.test(u)).join('\n');
     const url = 'https://botapi.max.ru/messages?chat_id=' + encodeURIComponent(chatId);
-    const attempts = [
-      { Authorization: 'Bearer ' + clean },
-      { Authorization: clean },
-      { 'X-Access-Token': clean },
-    ];
-    async function trySend(payloadObj, label) {
-      for (const auth of attempts) {
-        const r = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json', ...auth }, body: JSON.stringify(payloadObj) });
-        let j = null; try { j = await r.json(); } catch (_) {}
-        console.log('MAX', label, Object.keys(auth)[0], r.status, JSON.stringify(j));
-        if (r.ok && !(j && (j.code || j.error))) return true;
-      }
-      return false;
-    }
-    const withLinks = (t) => t + (links ? '\n\n' + links : '');
     // MAX markdown: подчёркивание __x__ у MAX ненадёжно — превращаем в жирный **x**
     const mdText = String(text || '').replace(/__([\s\S]*?)__/g, '**$1**');
-    // сначала с markdown-форматированием; при неудаче — чистым текстом, чтобы пост не потерялся
-    if (await trySend({ text: withLinks(mdText), format: 'markdown' }, 'md')) return true;
-    return await trySend({ text: withLinks(toPlain(text)) }, 'plain');
+    const photos = (media || []).filter((m) => m.type === 'photo').slice(0, 4);
+
+    // грузим фото как вложения
+    const attachments = [];
+    for (const p of photos) {
+      const bytes = await fetchImageBytes(p.url);
+      if (!bytes) continue;
+      const payload = await maxUploadImage(clean, bytes);
+      if (payload) attachments.push({ type: 'image', payload });
+    }
+
+    async function send(bodyObj, label) {
+      const res = await maxAuthFetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(bodyObj) }, clean);
+      console.log('MAX', label, res.status, JSON.stringify(res.j));
+      return res;
+    }
+
+    // отправка с вложениями + markdown; ретрай, если вложения ещё обрабатываются
+    let body = { text: mdText, format: 'markdown' };
+    if (attachments.length) body.attachments = attachments;
+    let res = await send(body, attachments.length ? 'md+img' : 'md');
+    let tries = 0;
+    while (!res.ok && res.j && /not[._-]?ready|processing|proc\.error/i.test(JSON.stringify(res.j)) && tries < 3) {
+      await new Promise((r) => setTimeout(r, 2000)); tries++;
+      res = await send(body, 'retry');
+    }
+    if (res.ok) return true;
+
+    // фолбэк: чистый текст (+ ссылки на фото), без markdown/вложений — чтобы пост не потерялся
+    const links = photos.map((p) => p.url).filter((u) => /^https?:/.test(u)).join('\n');
+    const res2 = await send({ text: toPlain(text) + (links ? '\n\n' + links : '') }, 'plain');
+    return res2.ok;
   } catch (e) { console.error('MAX', e); return false; }
 }
 app.post('/api/publish', async (req, res) => {
