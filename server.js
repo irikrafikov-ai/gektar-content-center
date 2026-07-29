@@ -3,10 +3,21 @@
 // Ключ НИКОГДА не попадает в браузер.
 const express = require('express');
 const path = require('path');
+const fs = require('fs');
 const app = express();
 
-app.use(express.json({ limit: '4mb' }));
+app.use(express.json({ limit: '16mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
+
+// ── постоянное хранилище (на Railway лучше смонтировать Volume и задать DATA_DIR=/data) ──
+const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
+const POSTS_FILE = path.join(DATA_DIR, 'posts.json');
+const UPLOAD_DIR = path.join(DATA_DIR, 'uploads');
+try { fs.mkdirSync(UPLOAD_DIR, { recursive: true }); } catch (_) {}
+app.use('/uploads', express.static(UPLOAD_DIR));
+function loadPosts() { try { return JSON.parse(fs.readFileSync(POSTS_FILE, 'utf8')); } catch (_) { return []; } }
+function savePosts(arr) { try { fs.mkdirSync(DATA_DIR, { recursive: true }); fs.writeFileSync(POSTS_FILE, JSON.stringify(arr)); } catch (e) { console.error('savePosts', e); } }
+function originOf(req) { return (req.headers['x-forwarded-proto'] || req.protocol || 'https') + '://' + req.get('host'); }
 
 app.post('/api/generate', async (req, res) => {
   const key = process.env.ANTHROPIC_API_KEY;
@@ -247,19 +258,23 @@ async function maxSend(token, chat, text, media) {
     return res2.ok;
   } catch (e) { console.error('MAX', e); return false; }
 }
-app.post('/api/publish', async (req, res) => {
-  const { aud, text, media, channels } = req.body || {};
-  const ch = channels || 'both';
+// единая публикация поста по его аудитории/каналам — используется и API, и планировщиком
+async function publishPost(item) {
+  const ch = item.channels || 'both';
   const wantTg = ch !== 'max', wantMax = ch !== 'tg';
-  const A = aud === 'client' ? 'CLIENT' : 'PARTNER';
+  const A = item.aud === 'client' ? 'CLIENT' : 'PARTNER';
   const tgToken = process.env['TG_TOKEN_' + A] || process.env.TG_TOKEN;
   const tgChat = process.env['TG_CHAT_' + A];
   const maxToken = process.env['MAX_TOKEN_' + A] || process.env.MAX_TOKEN;
   const maxChat = process.env['MAX_CHAT_' + A];
-  const out = { tg: 'skip', max: 'skip', audience: A.toLowerCase() };
-  if (wantTg && tgToken && tgChat) out.tg = (await tgSend(tgToken, tgChat, text || '', media || [])) ? 'ok' : 'err';
-  if (wantMax && maxToken && maxChat) out.max = (await maxSend(maxToken, maxChat, text || '', media || [])) ? 'ok' : 'err';
-  res.json(out);
+  const out = { tg: 'off', max: 'off' };
+  if (wantTg) out.tg = (tgToken && tgChat) ? ((await tgSend(tgToken, tgChat, item.text || '', item.media || [])) ? 'ok' : 'err') : 'wait';
+  if (wantMax) out.max = (maxToken && maxChat) ? ((await maxSend(maxToken, maxChat, item.text || '', item.media || [])) ? 'ok' : 'err') : 'wait';
+  return out;
+}
+app.post('/api/publish', async (req, res) => {
+  const out = await publishPost(req.body || {});
+  res.json({ tg: out.tg === 'wait' ? 'skip' : out.tg, max: out.max === 'wait' ? 'skip' : out.max });
 });
 
 // ── KIE (kie.ai): генерация видео и видео-по-фото (Veo). Ключ KIE_API_KEY на сервере. ──
@@ -307,6 +322,65 @@ app.get('/api/video-status', async (req, res) => {
     res.json({ done: !!videoUrl, failed: failed && !videoUrl, videoUrl });
   } catch (e) { res.status(500).json({ error: { message: String(e && e.message || e) } }); }
 });
+
+// ── Хранилище постов: календарь/история + автопубликация отложенных ──
+app.get('/api/posts', (req, res) => { res.json(loadPosts()); });
+
+app.post('/api/posts', async (req, res) => {
+  const p = req.body || {};
+  if (!p.id) p.id = 'p' + Date.now() + Math.random().toString(36).slice(2, 6);
+  const posts = loadPosts();
+  const now = Date.now();
+  const when = p.date ? new Date(p.date).getTime() : now;
+  const future = !!p.scheduled && when > now + 30000;
+  if (future) {
+    p.published = false;
+    p.status = { tg: p.channels === 'max' ? 'off' : 'plan', max: p.channels === 'tg' ? 'off' : 'plan' };
+  } else {
+    p.status = await publishPost(p);
+    p.published = true; p.scheduled = false; p.date = new Date().toISOString();
+  }
+  const i = posts.findIndex((x) => x.id === p.id);
+  if (i > -1) posts[i] = p; else posts.push(p);
+  savePosts(posts);
+  res.json(p);
+});
+
+app.delete('/api/posts/:id', (req, res) => {
+  savePosts(loadPosts().filter((x) => x.id !== req.params.id));
+  res.json({ ok: true });
+});
+
+// загрузка своего фото (для «видео по фото») — принимаем data URL, отдаём публичную ссылку
+app.post('/api/upload', (req, res) => {
+  try {
+    const data = (req.body && req.body.data) || '';
+    const m = /^data:(image\/(png|jpe?g|webp));base64,(.*)$/.exec(data);
+    if (!m) return res.status(400).json({ error: { message: 'Ожидается data:image/... base64' } });
+    const ext = m[2] === 'jpeg' ? 'jpg' : m[2];
+    const name = 'up_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8) + '.' + ext;
+    fs.writeFileSync(path.join(UPLOAD_DIR, name), Buffer.from(m[3], 'base64'));
+    res.json({ url: originOf(req) + '/uploads/' + name });
+  } catch (e) { res.status(500).json({ error: { message: String(e && e.message || e) } }); }
+});
+
+// планировщик: каждые 30 сек публикует отложенные посты, у которых наступило время
+setInterval(async () => {
+  try {
+    const posts = loadPosts();
+    const now = Date.now();
+    let changed = false;
+    for (const p of posts) {
+      if (p.scheduled && !p.published && p.date && new Date(p.date).getTime() <= now) {
+        p.status = await publishPost(p);
+        p.published = true; p.scheduled = false;
+        changed = true;
+        console.log('scheduled published', p.id, JSON.stringify(p.status));
+      }
+    }
+    if (changed) savePosts(posts);
+  } catch (e) { console.error('scheduler', e); }
+}, 30000);
 
 const port = process.env.PORT || 3000;
 app.listen(port, () => console.log('ГектарЪ content-center up on :' + port));
