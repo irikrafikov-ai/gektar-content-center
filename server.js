@@ -85,15 +85,23 @@ app.post('/api/image', async (req, res) => {
 // Прокси картинок с Диска для задеплоенного сайта (в браузере адрес yandex-mcp скрыт)
 app.get('/api/img', async (req, res) => {
   const base = process.env.YANDEX_MCP_URL;
-  if (!base) return res.status(500).send('YANDEX_MCP_URL не задан');
-  const imgUrl = base.replace('/mcp/', '/img/') + '?path=' + encodeURIComponent(req.query.path || '');
+  if (!base) { console.log('IMG: YANDEX_MCP_URL не задан'); return res.status(500).send('YANDEX_MCP_URL не задан'); }
+  const target = base.replace('/mcp/', '/img/') + '?path=' + encodeURIComponent(req.query.path || '');
   try {
-    const r = await fetch(imgUrl);
+    const r = await fetch(target);
+    const ct = r.headers.get('content-type') || 'image/jpeg';
+    if (!r.ok || !/^image\//.test(ct)) {
+      const txt = await r.text().catch(() => '');
+      console.log('IMG proxy fail', r.status, 'ct=' + ct, 'path=' + (req.query.path || ''), txt.slice(0, 200));
+      return res.status(r.status || 502).send('img error: ' + r.status + ' ' + txt.slice(0, 200));
+    }
     const buf = Buffer.from(await r.arrayBuffer());
-    res.set('Content-Type', r.headers.get('content-type') || 'image/jpeg');
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Content-Type', ct);
     res.set('Cache-Control', 'public, max-age=3600');
-    res.status(r.status).send(buf);
+    res.status(200).send(buf);
   } catch (e) {
+    console.log('IMG proxy error', String(e && e.message || e));
     res.status(500).send(String(e && e.message || e));
   }
 });

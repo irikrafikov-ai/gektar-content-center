@@ -603,7 +603,7 @@ function detectProject(){
 // адрес картинки: в артефакте — прямой /img на yandex-mcp; на сервере — прокси /api/img
 function imgUrl(path){
   if(YANDEX_MCP) return YANDEX_MCP.replace('/mcp/','/img/')+'?path='+encodeURIComponent(path);
-  return '/api/img?path='+encodeURIComponent(path);
+  return location.origin+'/api/img?path='+encodeURIComponent(path);
 }
 
 async function findPhotos(){
