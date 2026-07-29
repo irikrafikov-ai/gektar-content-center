@@ -262,5 +262,51 @@ app.post('/api/publish', async (req, res) => {
   res.json(out);
 });
 
+// ── KIE (kie.ai): генерация видео и видео-по-фото (Veo). Ключ KIE_API_KEY на сервере. ──
+app.post('/api/video', async (req, res) => {
+  const key = process.env.KIE_API_KEY;
+  if (!key) return res.status(500).json({ error: { message: 'KIE_API_KEY не задан в переменных окружения сервера.' } });
+  const { prompt, imageUrl } = req.body || {};
+  if (!prompt) return res.status(400).json({ error: { message: 'Пустой prompt.' } });
+  const body = { prompt, model: 'veo3_fast', aspect_ratio: '16:9', enableTranslation: true };
+  if (imageUrl) body.imageUrls = [imageUrl];
+  try {
+    const r = await fetch('https://api.kie.ai/api/v1/veo/generate', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', authorization: 'Bearer ' + key.trim() },
+      body: JSON.stringify(body)
+    });
+    const data = await r.json();
+    console.log('KIE generate', r.status, JSON.stringify(data).slice(0, 300));
+    const taskId = data && data.data && (data.data.taskId || data.data.task_id);
+    if (!r.ok || data.code !== 200 || !taskId) {
+      return res.status(502).json({ error: { message: (data && data.msg) || ('KIE error ' + r.status) } });
+    }
+    res.json({ taskId });
+  } catch (e) { res.status(500).json({ error: { message: String(e && e.message || e) } }); }
+});
+
+app.get('/api/video-status', async (req, res) => {
+  const key = process.env.KIE_API_KEY;
+  if (!key) return res.status(500).json({ error: { message: 'KIE_API_KEY не задан.' } });
+  const taskId = req.query.taskId;
+  if (!taskId) return res.status(400).json({ error: { message: 'Нет taskId.' } });
+  try {
+    const r = await fetch('https://api.kie.ai/api/v1/veo/record-info?taskId=' + encodeURIComponent(taskId), {
+      headers: { authorization: 'Bearer ' + key.trim() }
+    });
+    const data = await r.json();
+    console.log('KIE status', r.status, JSON.stringify(data).slice(0, 300));
+    const d = (data && data.data) || {};
+    const flag = d.successFlag !== undefined ? d.successFlag : (d.state || d.status);
+    // ссылку на видео ищем в разных возможных полях
+    let videoUrl = (d.videoInfo && d.videoInfo.videoUrl) || d.video_url || d.videoUrl || null;
+    if (!videoUrl && d.resultJson) { try { const rj = JSON.parse(d.resultJson); videoUrl = (rj.resultUrls && rj.resultUrls[0]) || rj.video_url || null; } catch (_) {} }
+    if (!videoUrl && d.response && d.response.resultUrls) videoUrl = d.response.resultUrls[0];
+    const failed = flag === 2 || flag === 3 || flag === 'fail' || flag === 'FAILED' || flag === 'error';
+    res.json({ done: !!videoUrl, failed: failed && !videoUrl, videoUrl });
+  } catch (e) { res.status(500).json({ error: { message: String(e && e.message || e) } }); }
+});
+
 const port = process.env.PORT || 3000;
 app.listen(port, () => console.log('ГектарЪ content-center up on :' + port));

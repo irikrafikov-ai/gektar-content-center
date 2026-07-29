@@ -217,12 +217,12 @@ h2.sec{font-family:'Onest',sans-serif;font-weight:700;font-size:20px;margin:36px
     <label class="fld" for="vidPrompt">Что показать в кадре</label>
     <textarea id="vidPrompt" class="news" placeholder="Например: обзор одноэтажного дома из бруса 120 м² в «Щёкинских берегах», утро, солнце, зелень…"></textarea>
     <div class="row" id="vidFormat">
-      <div class="pick on" data-fmt="both" onclick="pickFmt(this)">Фото + видео</div>
-      <div class="pick" data-fmt="video" onclick="pickFmt(this)">Только видео</div>
-      <div class="pick" data-fmt="photo" onclick="pickFmt(this)">Только фото</div>
+      <div class="pick" data-fmt="photo" onclick="pickFmt(this)">Фото</div>
+      <div class="pick on" data-fmt="video" onclick="pickFmt(this)">Видео</div>
+      <div class="pick" data-fmt="i2v" onclick="pickFmt(this)">Видео по фото</div>
     </div>
-    <label class="check"><input type="checkbox" id="vidRef" checked> Взять референс (дом/участок) с Яндекс.Диска</label>
-    <p class="hint">Генерация идёт через студию Higgsfield и <b>тратит кредиты аккаунта</b>. Видео рендерится несколько минут — появится кнопка «Проверить готовность».</p>
+    <label class="check"><input type="checkbox" id="vidRef" checked> Для «видео по фото» — взять референс с Яндекс.Диска (проект пойму по описанию)</label>
+    <p class="hint"><b>Фото</b> — через ChatGPT. <b>Видео</b> и <b>видео по фото</b> — через KIE (Veo), рендер 2–5 минут: появится кнопка «Проверить готовность». Генерация платная (расходует баланс KIE / OpenAI).</p>
     <div class="actions"><button class="btn btn-gold" id="vidBtn" onclick="generateVideo()">Сгенерировать медиа</button></div>
     <div class="loader" id="loaderVideo"><span class="seed"></span><span id="loaderVideoText">Готовлю кадр…</span></div>
   </section>
@@ -322,7 +322,7 @@ h2.sec{font-family:'Onest',sans-serif;font-weight:700;font-size:20px;margin:36px
 const YANDEX_MCP=""; // на сервере
 const HIGGS_MCP="";   // на сервере
 
-let tab='partner',vidFmt='both';
+let tab='partner',vidFmt='video';
 let current=null,currentSource=null;   // 'pending' | 'approved'
 let whenMode='now';
 let chMode='both';   // both | tg | max
@@ -652,52 +652,84 @@ async function genPhotos(){
 }
 
 /* ── видеопродакшн ── */
+// одна прямая ссылка на фото проекта с Диска (для «видео по фото»)
+async function oneDiskPhoto(project){
+  const p=project||PROJECTS.find(x=>(cards[x.id]||'').trim())||PROJECTS[0];
+  const d=await callGen({model:"claude-sonnet-4-6",max_tokens:1500,
+    mcp_servers:[{type:"url",url:YANDEX_MCP,name:"yandex-gektar"}],
+    messages:[{role:"user",content:`Выведи список файлов в "${p.path}/Фотографии" через list_files и верни путь к ОДНОМУ изображению (.jpg/.png, не видео). Только путь, без комментариев.
+Заверши строго между метками:
+===НАЧАЛО===
+<полный путь к файлу>
+===КОНЕЦ===`}]});
+  const line=(extractPost(d)||'').trim().replace(/^disk:/,'');
+  return /\.(jpe?g|png|webp)$/i.test(line)?imgUrl(line):null;
+}
+
 async function generateVideo(){
   const prompt=document.getElementById('vidPrompt').value.trim();
   if(!prompt){toast('Опиши, что показать в кадре.');return;}
-  const useRef=document.getElementById('vidRef').checked;
-  loader('video',true,['Ищу референс на Диске…','Собираю кадр…','Рендерю фото…','Запускаю видео…','Ждём студию…']);
+  const mode=vidFmt; // photo | video | i2v
   document.getElementById('post').classList.remove('on');
+
+  // ── ФОТО через ChatGPT ──
+  if(mode==='photo'){
+    loader('video',true,['Генерирую фото…']);
+    try{
+      const r=await fetch('/api/image',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:'Реалистичное фото для загородной недвижимости «ГектарЪ». '+prompt+'. Без текста и логотипов.'})});
+      const data=await r.json();
+      if(data.error)throw new Error(data.error.message);
+      if(!data.image)throw new Error('Фото не получено');
+      const item={id:seq++,text:prompt,media:[{type:'photo',url:data.image,cap:'сгенерировано'}],origin:'generated',aud:'video',renderNote:null,date:null,scheduled:false,tg:'wait',max:'wait'};
+      pending.push(item);setEditor(item,'pending');renderPending();
+    }catch(e){console.error(e);toast('Не вышло: '+e.message);}
+    finally{loader('video',false);}
+    return;
+  }
+
+  // ── ВИДЕО / ВИДЕО ПО ФОТО через KIE ──
+  loader('video',true,mode==='i2v'?['Беру референс с Диска…','Отправляю в KIE…']:['Отправляю задачу в KIE…','Запускаю рендер…']);
   try{
-    const want=vidFmt==='photo'?'только фото':vidFmt==='video'?'только видео':'фото и короткое видео (5–10 сек)';
-    const refLine=useRef?'Сначала найди на Яндекс.Диске подходящее фото дома/участка (list_files → get_public_link) и используй как визуальный референс/базу.':'Референс с Диска не нужен, генерируй с нуля.';
-    const steps=vidFmt==='photo'?'Сгенерируй фото через hexvild generate_image.':vidFmt==='video'?'Сгенерируй видео через hexvild generate_video (при необходимости сперва кадр generate_image).':'Сгенерируй фото через generate_image, затем короткое видео через generate_video на его основе.';
-    const res=await fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:6000,
-        mcp_servers:[{type:"url",url:YANDEX_MCP,name:"yandex-gektar"},{type:"url",url:HIGGS_MCP,name:"hexvild"}],
-        messages:[{role:"user",content:
-`Ты — продюсер медиа для «ГектарЪ» (загородные дома и участки). Нужно ${want}.
-Задача: «${prompt}».
-${refLine}
-${steps}
-Дождись готовых URL (используй job_display/status). Напиши короткую подпись (2–3 предложения, тёплый тон). Не пиши промежуточных комментариев.
-ПОСЛЕДНИМ сообщением верни ТОЛЬКО валидный JSON и больше НИЧЕГО:
-{"caption":"подпись","photo_url":"или null","video_url":"или null","pending":"текст если ещё рендерится, иначе null","job_ids":["id"],"sources":["пути с Диска"]}`}]})});
-    const data=await res.json();if(data.error)throw new Error(data.error.message||'Ошибка API');
-    const p=parsePost(data)||{};const media=[];
-    if(p.photo_url&&p.photo_url!=='null')media.push({type:'photo',url:p.photo_url,cap:'фото'});
-    if(p.video_url&&p.video_url!=='null')media.push({type:'video',url:p.video_url,cap:'видео'});
-    const note=(p.pending&&p.pending!=='null')?{note:p.pending,jobs:p.job_ids||[]}:null;
-    if(!media.length&&!note){toast(data.stop_reason==='max_tokens'?'Студия не успела за один проход — попробуй ещё раз.':'Студия не вернула медиа — переформулируй запрос.');return;}
-    const item={id:seq++,text:(p.caption||prompt).trim(),media,origin:'generated',aud:'video',
-      renderNote:note,date:null,scheduled:false,tg:'wait',max:'wait'};
+    let imageUrl=null;
+    if(mode==='i2v'){
+      const useRef=document.getElementById('vidRef').checked;
+      if(useRef){
+        // проект понимаем по описанию
+        const t=prompt.toLowerCase();
+        let proj=PROJECTS.find(pp=>t.includes(pp.name.toLowerCase())||t.includes(pp.region.toLowerCase().replace(' область','').replace(' обл','')));
+        imageUrl=await oneDiskPhoto(proj);
+      }
+      if(!imageUrl){toast('Не нашёл референс-фото на Диске. Попробуй режим «Видео» или уточни проект.');loader('video',false);return;}
+    }
+    const r=await fetch('/api/video',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt,imageUrl})});
+    const data=await r.json();
+    if(data.error)throw new Error(data.error.message);
+    if(!data.taskId)throw new Error('KIE не вернул задачу');
+    const item={id:seq++,text:prompt,media:[],origin:'generated',aud:'video',
+      renderNote:{note:'KIE рендерит видео (2–5 мин). Нажми «Проверить готовность».',taskId:data.taskId},
+      date:null,scheduled:false,tg:'wait',max:'wait'};
     pending.push(item);setEditor(item,'pending');renderPending();
+    toast('Задача отправлена в KIE. Через пару минут проверь готовность.');
   }catch(e){console.error(e);toast('Не вышло: '+e.message);}
   finally{loader('video',false);}
 }
+
 async function checkVideo(){
-  if(!current||!current.renderNote)return;
-  loader('video',true,['Спрашиваю студию…','Проверяю готовность…']);
+  if(!current||!current.renderNote||!current.renderNote.taskId)return;
+  loader('video',true,['Спрашиваю KIE…','Проверяю готовность…']);
   try{
-    const res=await fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:2000,mcp_servers:[{type:"url",url:HIGGS_MCP,name:"hexvild"}],
-        messages:[{role:"user",content:`Проверь готовность задач Higgsfield и верни финальные ссылки. ID: ${JSON.stringify(current.renderNote.jobs)}. Используй job_display/status. Не пиши комментариев, верни ТОЛЬКО JSON.
-Ответь СТРОГО JSON: {"photo_url":"или null","video_url":"или null","pending":"текст если ещё рендерится, иначе null"}`}]})});
-    const data=await res.json();const p=parsePost(data)||{};
-    if(p.photo_url&&p.photo_url!=='null'&&!current.media.some(m=>m.type==='photo'))current.media.push({type:'photo',url:p.photo_url,cap:'фото'});
-    if(p.video_url&&p.video_url!=='null'&&!current.media.some(m=>m.type==='video'))current.media.push({type:'video',url:p.video_url,cap:'видео'});
-    current.renderNote=(p.pending&&p.pending!=='null')?{note:p.pending,jobs:current.renderNote.jobs}:null;
-    renderResult();if(!current.renderNote)toast('Медиа готово ✅');
+    const r=await fetch('/api/video-status?taskId='+encodeURIComponent(current.renderNote.taskId));
+    const data=await r.json();
+    if(data.error)throw new Error(data.error.message);
+    if(data.videoUrl){
+      if(!current.media.some(m=>m.type==='video'))current.media.push({type:'video',url:data.videoUrl,cap:'видео'});
+      current.renderNote=null;renderResult();renderPending();toast('Видео готово ✅');
+    }else if(data.failed){
+      current.renderNote={note:'KIE не смог сгенерировать — попробуй переформулировать.',taskId:current.renderNote.taskId};
+      renderResult();toast('Генерация не удалась.');
+    }else{
+      toast('Ещё рендерится — подожди немного и проверь снова.');
+    }
   }catch(e){console.error(e);toast('Не удалось проверить: '+e.message);}
   finally{loader('video',false);}
 }
