@@ -108,6 +108,18 @@ function dataUrlToBlob(dataUrl) {
   if (!m) return null;
   return { blob: new Blob([Buffer.from(m[2], 'base64')], { type: m[1] }), type: m[1] };
 }
+// markdown → HTML-теги Telegram, безопасное экранирование прочего
+function toTgHtml(src) {
+  let s = String(src || '');
+  // защитим уже готовые теги b/i/u/s от экранирования
+  s = s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  // markdown → html
+  s = s.replace(/\*\*([^\n*][\s\S]*?)\*\*/g, '<b>$1</b>');   // **жирный**
+  s = s.replace(/__([^\n_][\s\S]*?)__/g, '<u>$1</u>');       // __подчёркнутый__
+  s = s.replace(/(^|[\s(])\*([^\s*][^*\n]*?)\*(?=[\s).,!?:;]|$)/g, '$1<i>$2</i>'); // *курсив*
+  s = s.replace(/(^|[\s(])_([^\s_][^_\n]*?)_(?=[\s).,!?:;]|$)/g, '$1<i>$2</i>');   // _курсив_
+  return s;
+}
 async function tgSend(token, chat, text, media) {
   // приводим ссылку t.me/name к @name; числовой id и @username оставляем как есть
   if (typeof chat === 'string') {
@@ -115,40 +127,48 @@ async function tgSend(token, chat, text, media) {
     if (m) chat = '@' + m[1];
   }
   const api = (m) => `https://api.telegram.org/bot${token}/${m}`;
+  const html = toTgHtml(text);
   const photos = (media || []).filter((x) => x.type === 'photo');
   const video = (media || []).find((x) => x.type === 'video');
   try {
     if (video) {
-      const r = await fetch(api('sendVideo'), { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ chat_id: chat, video: video.url, caption: text }) });
+      const r = await fetch(api('sendVideo'), { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ chat_id: chat, video: video.url, caption: html, parse_mode: 'HTML' }) });
       return !!(await r.json()).ok;
     }
-    // одиночное сгенерированное фото приходит как data URL — грузим как файл
     if (photos.length === 1 && photos[0].url.startsWith('data:')) {
       const d = dataUrlToBlob(photos[0].url);
       const fd = new FormData();
-      fd.append('chat_id', chat); fd.append('caption', text);
+      fd.append('chat_id', chat); fd.append('caption', html); fd.append('parse_mode', 'HTML');
       fd.append('photo', d.blob, 'photo.png');
       const r = await fetch(api('sendPhoto'), { method: 'POST', body: fd });
       return !!(await r.json()).ok;
     }
     const httpPhotos = photos.filter((p) => /^https?:/.test(p.url));
     if (httpPhotos.length > 1) {
-      const r = await fetch(api('sendMediaGroup'), { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ chat_id: chat, media: httpPhotos.slice(0, 10).map((p, i) => ({ type: 'photo', media: p.url, caption: i === 0 ? text : undefined })) }) });
+      const r = await fetch(api('sendMediaGroup'), { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ chat_id: chat, media: httpPhotos.slice(0, 10).map((p, i) => ({ type: 'photo', media: p.url, caption: i === 0 ? html : undefined, parse_mode: i === 0 ? 'HTML' : undefined })) }) });
       const j = await r.json(); return Array.isArray(j.result) ? true : !!j.ok;
     }
     if (httpPhotos.length === 1) {
-      const r = await fetch(api('sendPhoto'), { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ chat_id: chat, photo: httpPhotos[0].url, caption: text }) });
+      const r = await fetch(api('sendPhoto'), { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ chat_id: chat, photo: httpPhotos[0].url, caption: html, parse_mode: 'HTML' }) });
       return !!(await r.json()).ok;
     }
-    const r = await fetch(api('sendMessage'), { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ chat_id: chat, text }) });
+    const r = await fetch(api('sendMessage'), { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ chat_id: chat, text: html, parse_mode: 'HTML' }) });
     return !!(await r.json()).ok;
   } catch (e) { console.error('TG', e); return false; }
+}
+function toPlain(src) {
+  return String(src || '')
+    .replace(/\*\*([\s\S]*?)\*\*/g, '$1')
+    .replace(/__([\s\S]*?)__/g, '$1')
+    .replace(/(^|[\s(])\*([^\s*][^*\n]*?)\*(?=[\s).,!?:;]|$)/g, '$1$2')
+    .replace(/(^|[\s(])_([^\s_][^_\n]*?)_(?=[\s).,!?:;]|$)/g, '$1$2');
 }
 async function maxSend(token, chat, text, media) {
   try {
     const links = (media || []).map((m) => m.url).filter((u) => /^https?:/.test(u)).join('\n');
     const url = 'https://botapi.max.ru/messages?access_token=' + encodeURIComponent(token) + '&chat_id=' + encodeURIComponent(chat);
-    const r = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ text: text + (links ? '\n\n' + links : '') }) });
+    const body = toPlain(text) + (links ? '\n\n' + links : '');
+    const r = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ text: body }) });
     return r.ok;
   } catch (e) { console.error('MAX', e); return false; }
 }
