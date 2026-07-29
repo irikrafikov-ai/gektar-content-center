@@ -165,11 +165,17 @@ function toPlain(src) {
 }
 async function maxSend(token, chat, text, media) {
   try {
+    // нормализация chat_id: из ссылки max.ru/... берём хвост; иначе оставляем как есть
+    let chatId = String(chat || '').trim();
+    const mm = chatId.match(/max\.ru\/[^/]*\/(-?\d+)/) || chatId.match(/(-?\d{5,})/);
+    if (mm) chatId = mm[1];
     const links = (media || []).map((m) => m.url).filter((u) => /^https?:/.test(u)).join('\n');
-    const url = 'https://botapi.max.ru/messages?access_token=' + encodeURIComponent(token) + '&chat_id=' + encodeURIComponent(chat);
+    const url = 'https://botapi.max.ru/messages?access_token=' + encodeURIComponent(token) + '&chat_id=' + encodeURIComponent(chatId);
     const body = toPlain(text) + (links ? '\n\n' + links : '');
     const r = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ text: body }) });
-    return r.ok;
+    let j = null; try { j = await r.json(); } catch (_) {}
+    console.log('MAX response', r.status, JSON.stringify(j));
+    return r.ok && !(j && (j.code || j.error));
   } catch (e) { console.error('MAX', e); return false; }
 }
 app.post('/api/publish', async (req, res) => {
