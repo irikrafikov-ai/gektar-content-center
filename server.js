@@ -171,20 +171,26 @@ async function maxSend(token, chat, text, media) {
     if (mm) chatId = mm[1];
     const links = (media || []).map((m) => m.url).filter((u) => /^https?:/.test(u)).join('\n');
     const url = 'https://botapi.max.ru/messages?chat_id=' + encodeURIComponent(chatId);
-    const payload = JSON.stringify({ text: toPlain(text) + (links ? '\n\n' + links : '') });
-    // MAX-документация противоречива по авторизации — пробуем варианты, берём первый успешный
     const attempts = [
       { Authorization: 'Bearer ' + clean },
       { Authorization: clean },
       { 'X-Access-Token': clean },
     ];
-    for (const auth of attempts) {
-      const r = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json', ...auth }, body: payload });
-      let j = null; try { j = await r.json(); } catch (_) {}
-      console.log('MAX try', Object.keys(auth)[0], r.status, JSON.stringify(j));
-      if (r.ok && !(j && (j.code || j.error))) return true;
+    async function trySend(payloadObj, label) {
+      for (const auth of attempts) {
+        const r = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json', ...auth }, body: JSON.stringify(payloadObj) });
+        let j = null; try { j = await r.json(); } catch (_) {}
+        console.log('MAX', label, Object.keys(auth)[0], r.status, JSON.stringify(j));
+        if (r.ok && !(j && (j.code || j.error))) return true;
+      }
+      return false;
     }
-    return false;
+    const withLinks = (t) => t + (links ? '\n\n' + links : '');
+    // MAX markdown: подчёркивание __x__ у MAX ненадёжно — превращаем в жирный **x**
+    const mdText = String(text || '').replace(/__([\s\S]*?)__/g, '**$1**');
+    // сначала с markdown-форматированием; при неудаче — чистым текстом, чтобы пост не потерялся
+    if (await trySend({ text: withLinks(mdText), format: 'markdown' }, 'md')) return true;
+    return await trySend({ text: withLinks(toPlain(text)) }, 'plain');
   } catch (e) { console.error('MAX', e); return false; }
 }
 app.post('/api/publish', async (req, res) => {
