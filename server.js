@@ -109,6 +109,11 @@ function dataUrlToBlob(dataUrl) {
   return { blob: new Blob([Buffer.from(m[2], 'base64')], { type: m[1] }), type: m[1] };
 }
 async function tgSend(token, chat, text, media) {
+  // приводим ссылку t.me/name к @name; числовой id и @username оставляем как есть
+  if (typeof chat === 'string') {
+    const m = chat.match(/(?:https?:\/\/)?t\.me\/([A-Za-z0-9_]+)/);
+    if (m) chat = '@' + m[1];
+  }
   const api = (m) => `https://api.telegram.org/bot${token}/${m}`;
   const photos = (media || []).filter((x) => x.type === 'photo');
   const video = (media || []).find((x) => x.type === 'video');
