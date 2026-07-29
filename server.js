@@ -148,15 +148,17 @@ async function maxSend(token, chat, text, media) {
   } catch (e) { console.error('MAX', e); return false; }
 }
 app.post('/api/publish', async (req, res) => {
-  const { aud, text, media } = req.body || {};
+  const { aud, text, media, channels } = req.body || {};
+  const ch = channels || 'both';
+  const wantTg = ch !== 'max', wantMax = ch !== 'tg';
   const A = aud === 'client' ? 'CLIENT' : 'PARTNER';
   const tgToken = process.env['TG_TOKEN_' + A] || process.env.TG_TOKEN;
   const tgChat = process.env['TG_CHAT_' + A];
   const maxToken = process.env['MAX_TOKEN_' + A] || process.env.MAX_TOKEN;
   const maxChat = process.env['MAX_CHAT_' + A];
   const out = { tg: 'skip', max: 'skip', audience: A.toLowerCase() };
-  if (tgToken && tgChat) out.tg = (await tgSend(tgToken, tgChat, text || '', media || [])) ? 'ok' : 'err';
-  if (maxToken && maxChat) out.max = (await maxSend(maxToken, maxChat, text || '', media || [])) ? 'ok' : 'err';
+  if (wantTg && tgToken && tgChat) out.tg = (await tgSend(tgToken, tgChat, text || '', media || [])) ? 'ok' : 'err';
+  if (wantMax && maxToken && maxChat) out.max = (await maxSend(maxToken, maxChat, text || '', media || [])) ? 'ok' : 'err';
   res.json(out);
 });
 

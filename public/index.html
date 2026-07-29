@@ -264,6 +264,12 @@ h2.sec{font-family:'Onest',sans-serif;font-weight:700;font-size:20px;margin:36px
       <div class="sources" id="sourcesBox" style="display:none"></div>
     </div>
     <div class="sched-bar">
+      <label>📢 Куда</label>
+      <div class="pill on" data-ch="both" onclick="pickCh(this)">Везде</div>
+      <div class="pill" data-ch="tg" onclick="pickCh(this)">Только Telegram</div>
+      <div class="pill" data-ch="max" onclick="pickCh(this)">Только MAX</div>
+    </div>
+    <div class="sched-bar">
       <label>📅 Публикация</label>
       <div class="pill on" data-when="now" onclick="pickWhen(this)">Сейчас</div>
       <div class="pill" data-when="time" onclick="pickWhen(this)">По времени</div>
@@ -319,6 +325,8 @@ const HIGGS_MCP="";   // подставляется на сервере
 let tab='partner',vidFmt='both';
 let current=null,currentSource=null;   // 'pending' | 'approved'
 let whenMode='now';
+let chMode='both';   // both | tg | max
+function pickCh(el){document.querySelectorAll('.sched-bar .pill[data-ch]').forEach(p=>p.classList.remove('on'));el.classList.add('on');chMode=el.dataset.ch;}
 let lastText='';
 let cfg={tgToken:'',tgChat:'',maxToken:'',maxChat:''};
 const pending=[];     // на согласование
@@ -738,6 +746,9 @@ function renderResult(){
     document.getElementById('schedAt').style.display='none';
   }
   updateSchedHint();
+  // канал: из сохранённого выбора поста или «Везде»
+  chMode=current.channels||'both';
+  document.querySelectorAll('.sched-bar .pill[data-ch]').forEach(p=>p.classList.toggle('on',p.dataset.ch===chMode));
   document.getElementById('post').classList.add('on');
   document.getElementById('post').scrollIntoView({behavior:'smooth',block:'start'});
 }
@@ -770,16 +781,18 @@ async function approve(){
     const i=pending.findIndex(x=>x.id===current.id);if(i>-1)pending.splice(i,1);
     approved.push(current);currentSource='approved';
   }
+  current.channels=chMode;
   document.getElementById('post').classList.remove('on');
   document.getElementById('news').value='';document.getElementById('vidPrompt').value='';
 
-  if(future){current.tg='plan';current.max='plan';toast('Запланировано на '+date.toLocaleDateString('ru-RU',{day:'2-digit',month:'long'})+' — в календаре.');}
+  const wantTg=chMode!=='max', wantMax=chMode!=='tg';
+  if(future){current.tg=wantTg?'plan':'off';current.max=wantMax?'plan':'off';toast('Запланировано на '+date.toLocaleDateString('ru-RU',{day:'2-digit',month:'long'})+' — в календаре.');}
   else{
     const res=await publishItem(current);
-    if(res.mode==='none'){current.tg='wait';current.max='wait';toast('Согласовано, ждёт отправки. Подключи каналы (Railway или «⚙ Каналы»).');}
+    if(res.mode==='none'){current.tg=wantTg?'wait':'off';current.max=wantMax?'wait':'off';toast('Согласовано, ждёт отправки. Проверь, что канал подключён.');}
     else{current.tg=res.tg;current.max=res.max;
-      const ok=(res.tg!=='err')&&(res.max!=='err');
-      toast(ok?'Согласовано и опубликовано ✅':'Отправила не везде — смотри статусы.');}
+      const bad=(wantTg&&res.tg==='err')||(wantMax&&res.max==='err');
+      toast(bad?'Отправила не везде — смотри статусы.':'Согласовано и опубликовано ✅');}
   }
   current=null;currentSource=null;
   renderPending();renderCalendar();
@@ -793,20 +806,27 @@ async function publishNow(id){
   renderCalendar();openDay(selKey,true);toast('Отправлено.');
 }
 
-// публикация: сначала пробуем бэкенд (каналы из Railway, маршрут по аудитории),
-// если бэкенда нет (артефакт) — фолбэк на токены из «⚙ Каналы»
+// публикация: сначала бэкенд (каналы из Railway, маршрут по аудитории),
+// если бэкенда нет (артефакт) — фолбэк на токены из «⚙ Каналы». chMode: both|tg|max
 async function publishItem(item){
+  const ch=item.channels||'both';
+  const wantTg=ch!=='max', wantMax=ch!=='tg';
   try{
     const r=await fetch('/api/publish',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({aud:item.aud,text:item.text,media:item.media})});
+      body:JSON.stringify({aud:item.aud,text:item.text,media:item.media,channels:ch})});
     if(r.ok){const j=await r.json();
-      if(j.tg==='skip'&&j.max==='skip')return {mode:'none'};
-      return {mode:'server',tg:j.tg==='skip'?'wait':j.tg,max:j.max==='skip'?'wait':j.max};}
-  }catch(e){/* нет бэкенда — идём в фолбэк */}
+      const tg=!wantTg?'off':(j.tg==='skip'?'wait':j.tg);
+      const max=!wantMax?'off':(j.max==='skip'?'wait':j.max);
+      // «none» — если ни один нужный канал не настроен на сервере
+      const tgConfigured=wantTg&&j.tg!=='skip', maxConfigured=wantMax&&j.max!=='skip';
+      if(!tgConfigured&&!maxConfigured)return {mode:'none'};
+      return {mode:'server',tg,max};}
+  }catch(e){/* нет бэкенда — фолбэк */}
   const hasTg=cfg.tgToken&&cfg.tgChat,hasMax=cfg.maxToken&&cfg.maxChat;
-  if(!hasTg&&!hasMax)return {mode:'none'};
-  const tg=hasTg?(await sendTelegram(item)?'ok':'err'):'wait';
-  const max=hasMax?(await sendMax(item)?'ok':'err'):'wait';
+  const doTg=wantTg&&hasTg, doMax=wantMax&&hasMax;
+  if(!doTg&&!doMax)return {mode:'none'};
+  const tg=doTg?(await sendTelegram(item)?'ok':'err'):'off';
+  const max=doMax?(await sendMax(item)?'ok':'err'):'off';
   return {mode:'local',tg,max};
 }
 
@@ -897,7 +917,7 @@ function openApproved(id){const h=approved.find(x=>x.id===id);if(h)setEditor(h,'
 
 /* ── утилиты ── */
 function audLabel(a){return a==='partner'?'Партнёрам':a==='client'?'Клиентам':'Видео';}
-function stz(s){return s==='ok'?'<span class="st ok">отправлено</span>':s==='err'?'<span class="st err">ошибка</span>':s==='plan'?'<span class="st plan">запланировано</span>':'<span class="st wait">ждёт</span>';}
+function stz(s){return s==='ok'?'<span class="st ok">отправлено</span>':s==='err'?'<span class="st err">ошибка</span>':s==='plan'?'<span class="st plan">запланировано</span>':s==='off'?'<span class="st wait">—</span>':'<span class="st wait">ждёт</span>';}
 function toLocalInput(d){const p=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+'T'+p(d.getHours())+':'+p(d.getMinutes());}
 function parsePost(data){
   const t=(data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('\n').replace(/```json|```/g,'');
