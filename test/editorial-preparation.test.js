@@ -44,8 +44,17 @@ test('synthetic test produces review-only dated slots, verbatim briefs and exact
 test('frozen input remains untouched, output is deeply frozen, replay and key ordering are deterministic', () => {
   const r = freeze(fixture()), before = JSON.stringify(r), a = prepareEditorial(r), b = prepareEditorial(r);
   assert.deepEqual(a, b); assert.equal(JSON.stringify(r), before); assert(Object.isFrozen(a.slots[0].brief));
-  const reordered = Object.fromEntries(Object.entries(fixture()).reverse());
+  const reorder = value => Array.isArray(value) ? value.map(reorder) : value && typeof value === 'object' ?
+    Object.fromEntries(Object.keys(value).sort().reverse().map(key => [key, reorder(value[key])])) : value;
+  const reordered = reorder(fixture());
   assert.deepEqual(a, prepareEditorial(reordered));
+  const canonicalOrder = value => Array.isArray(value) ? value.map(canonicalOrder) : value && typeof value === 'object' ?
+    Object.fromEntries(Object.keys(value).sort().map(key => [key, canonicalOrder(value[key])])) : value;
+  const stored = canonicalOrder(fixture());
+  assert.deepEqual(a, prepareEditorial(stored));
+  assert.deepEqual(a.evidence.map(item => item.role), ['calendar', 'project_facts']);
+  assert.equal(validateEditorialArtifact(a, reordered), true);
+  assert.equal(validateEditorialArtifact(a, stored), true);
   assert.throws(() => a.slots.push({}), TypeError);
   const { artifact_hash, ...body } = a; assert.equal(artifact_hash, hashJson(body));
 });

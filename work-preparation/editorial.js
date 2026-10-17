@@ -218,7 +218,9 @@ function prepareEditorial(input) {
     schema_version: OUTPUT_CONTRACT, kind: 'content.editorial.prepared', request_hash: hashJson(r), input_class: r.input_class,
     status, scope: 'internal_review_only', publication_authorized: false, business_readiness: 'not_assessed', semantic_fact_verification: 'not_performed', source_authenticity: 'not_verified_offline', freshness_scope: 'supplied_evaluation_time_only',
     project_id: r.project_id, audience: r.audience, objective: r.objective, planning_window: r.planning_window, cadence: r.cadence, evaluated_at: r.evaluated_at,
-    evidence: Object.entries(r.snapshots).filter(([, s]) => s).map(([role, s]) => sourceReference(s, role)), slots, conflict_warnings: warnings, blockers,
+    // Object insertion order can change during canonical JSON storage/transport.
+    // Keep evidence in canonical role order on the first run and every replay.
+    evidence: ['calendar', 'project_facts'].filter(role => r.snapshots[role]).map(role => sourceReference(r.snapshots[role], role)), slots, conflict_warnings: warnings, blockers,
   };
   return deepFreeze({ ...body, artifact_hash: hashJson(body) });
 }
