@@ -1,0 +1,203 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "marketing.text_draft.artifact.v1"
+    },
+    "kind": {
+      "enum": [
+        "content.text_draft.prepare",
+        "avitolog.text_draft.prepare"
+      ]
+    },
+    "status": {
+      "const": "generated"
+    },
+    "publication_authorized": {
+      "const": false
+    },
+    "input_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "items": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 2,
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32
+          },
+          "title": {
+            "type": "string",
+            "minLength": 12,
+            "maxLength": 120
+          },
+          "body": {
+            "type": "string",
+            "minLength": 250,
+            "maxLength": 6000
+          },
+          "claims": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 800
+                },
+                "source_id": {
+                  "enum": [
+                    "google.inventory.sb",
+                    "github.kb.sb.location",
+                    "github.kb.sb.cadastre"
+                  ]
+                },
+                "fact_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64
+                },
+                "quote": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 1500
+                }
+              },
+              "required": [
+                "text",
+                "source_id",
+                "fact_id",
+                "quote"
+              ],
+              "additionalProperties": false
+            },
+            "minItems": 2,
+            "maxItems": 25
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "body",
+          "claims"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "uncertainties": {
+      "type": "array",
+      "maxItems": 20,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 500
+      }
+    },
+    "excluded_claims": {
+      "type": "array",
+      "maxItems": 20,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 500
+      }
+    },
+    "financial_source_strings": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 128
+      },
+      "maxItems": 10,
+      "minItems": 1
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "task_id": {
+          "type": "string",
+          "pattern": "^ot_[a-f0-9]{64}$"
+        },
+        "request_hash": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "operation_key": {
+          "type": "string",
+          "pattern": "^mdg_[a-f0-9]{64}$"
+        },
+        "purpose": {
+          "enum": [
+            "content.internal_draft",
+            "avitolog.internal_draft"
+          ]
+        },
+        "request_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "thread_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "model": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "input_hash": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "output_hash": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "prompt_version": {
+          "const": "marketing-draft-v1"
+        },
+        "schema_hash": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      },
+      "required": [
+        "task_id",
+        "request_hash",
+        "operation_key",
+        "purpose",
+        "request_id",
+        "thread_id",
+        "model",
+        "input_hash",
+        "output_hash",
+        "prompt_version",
+        "schema_hash"
+      ]
+    }
+  },
+  "required": [
+    "schema_version",
+    "kind",
+    "status",
+    "publication_authorized",
+    "input_hash",
+    "items",
+    "uncertainties",
+    "excluded_claims",
+    "financial_source_strings",
+    "provenance"
+  ]
+}

@@ -1,0 +1,100 @@
+{
+  "type": "object",
+  "properties": {
+    "items": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 2,
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32
+          },
+          "title": {
+            "type": "string",
+            "minLength": 12,
+            "maxLength": 120
+          },
+          "body": {
+            "type": "string",
+            "minLength": 250,
+            "maxLength": 6000
+          },
+          "claims": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 800
+                },
+                "source_id": {
+                  "enum": [
+                    "google.inventory.sb",
+                    "github.kb.sb.location",
+                    "github.kb.sb.cadastre"
+                  ]
+                },
+                "fact_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64
+                },
+                "quote": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 1500
+                }
+              },
+              "required": [
+                "text",
+                "source_id",
+                "fact_id",
+                "quote"
+              ],
+              "additionalProperties": false
+            },
+            "minItems": 2,
+            "maxItems": 25
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "body",
+          "claims"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "uncertainties": {
+      "type": "array",
+      "maxItems": 20,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 500
+      }
+    },
+    "excluded_claims": {
+      "type": "array",
+      "maxItems": 20,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 500
+      }
+    }
+  },
+  "required": [
+    "items",
+    "uncertainties",
+    "excluded_claims"
+  ],
+  "additionalProperties": false
+}

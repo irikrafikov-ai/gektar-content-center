@@ -1,0 +1,482 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "text_draft.input.v1"
+    },
+    "kind": {
+      "enum": [
+        "content.text_draft.prepare",
+        "avitolog.text_draft.prepare"
+      ]
+    },
+    "pilot_id": {
+      "const": "marketing-drafts-20261017-v1"
+    },
+    "project_id": {
+      "const": "sb"
+    },
+    "input_class": {
+      "enum": [
+        "real",
+        "synthetic"
+      ]
+    },
+    "output": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "content_posts",
+            "avito_listing"
+          ]
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2
+        },
+        "audience": {
+          "enum": [
+            "client",
+            "partner"
+          ]
+        }
+      },
+      "required": [
+        "format",
+        "count",
+        "audience"
+      ]
+    },
+    "selection": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "plot_number": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 12,
+          "pattern": "^[1-9][0-9]{0,2}$"
+        }
+      },
+      "required": [
+        "plot_number"
+      ]
+    },
+    "evaluated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "snapshots": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "inventory": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "source_ref": {
+                  "const": "google.inventory.sb"
+                },
+                "revision": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "observed_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "source_modified_at": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "sha256": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "data": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "project_id": {
+                      "const": "sb"
+                    },
+                    "plot_number": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 12
+                    },
+                    "status_raw": {
+                      "enum": [
+                        "Свободен",
+                        "Акция"
+                      ]
+                    },
+                    "area_raw": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 64
+                    },
+                    "price_raw": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 64
+                    },
+                    "currency": {
+                      "const": "RUB"
+                    }
+                  },
+                  "required": [
+                    "project_id",
+                    "plot_number",
+                    "status_raw",
+                    "area_raw",
+                    "price_raw",
+                    "currency"
+                  ]
+                }
+              },
+              "required": [
+                "source_ref",
+                "revision",
+                "observed_at",
+                "source_modified_at",
+                "sha256",
+                "data"
+              ]
+            }
+          ]
+        },
+        "project": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "source_ref": {
+                  "const": "github.kb.sb.location"
+                },
+                "revision": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "observed_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "source_modified_at": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "sha256": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "data": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "project_id": {
+                      "const": "sb"
+                    },
+                    "facts": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "fact_id": {
+                            "type": "string",
+                            "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                          },
+                          "text": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 1500
+                          },
+                          "quote": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 1500
+                          },
+                          "source_record_id": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 200
+                          }
+                        },
+                        "required": [
+                          "fact_id",
+                          "text",
+                          "quote",
+                          "source_record_id"
+                        ]
+                      },
+                      "maxItems": 10,
+                      "minItems": 1
+                    }
+                  },
+                  "required": [
+                    "project_id",
+                    "facts"
+                  ]
+                }
+              },
+              "required": [
+                "source_ref",
+                "revision",
+                "observed_at",
+                "source_modified_at",
+                "sha256",
+                "data"
+              ]
+            }
+          ]
+        },
+        "cadastre": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "source_ref": {
+                  "const": "github.kb.sb.cadastre"
+                },
+                "revision": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "observed_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "source_modified_at": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "sha256": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "data": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "project_id": {
+                      "const": "sb"
+                    },
+                    "plot_number": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 12
+                    },
+                    "cadastral_number": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 40
+                    },
+                    "facts": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "fact_id": {
+                            "type": "string",
+                            "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                          },
+                          "text": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 1500
+                          },
+                          "quote": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 1500
+                          },
+                          "source_record_id": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 200
+                          }
+                        },
+                        "required": [
+                          "fact_id",
+                          "text",
+                          "quote",
+                          "source_record_id"
+                        ]
+                      },
+                      "maxItems": 10,
+                      "minItems": 1
+                    },
+                    "area_raw": {
+                      "type": "string",
+                      "pattern": "^[0-9]{1,3}(?:[.,][0-9]{1,4})?$"
+                    }
+                  },
+                  "required": [
+                    "project_id",
+                    "plot_number",
+                    "cadastral_number",
+                    "facts",
+                    "area_raw"
+                  ]
+                }
+              },
+              "required": [
+                "source_ref",
+                "revision",
+                "observed_at",
+                "source_modified_at",
+                "sha256",
+                "data"
+              ]
+            }
+          ]
+        },
+        "source_text": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "source_ref": {
+                  "const": "release.sb.text_seed"
+                },
+                "revision": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "observed_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "source_modified_at": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "sha256": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "data": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "project_id": {
+                      "const": "sb"
+                    },
+                    "plot_number": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 12
+                    },
+                    "title": {
+                      "type": "string",
+                      "minLength": 0,
+                      "maxLength": 300
+                    },
+                    "text": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 6000
+                    },
+                    "source_record_id": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 256
+                    }
+                  },
+                  "required": [
+                    "project_id",
+                    "plot_number",
+                    "title",
+                    "text",
+                    "source_record_id"
+                  ]
+                }
+              },
+              "required": [
+                "source_ref",
+                "revision",
+                "observed_at",
+                "source_modified_at",
+                "sha256",
+                "data"
+              ]
+            }
+          ]
+        },
+        "calendar": {
+          "type": "null"
+        }
+      },
+      "required": [
+        "inventory",
+        "project",
+        "cadastre",
+        "source_text",
+        "calendar"
+      ]
+    }
+  },
+  "required": [
+    "schema_version",
+    "kind",
+    "pilot_id",
+    "project_id",
+    "input_class",
+    "output",
+    "selection",
+    "evaluated_at",
+    "snapshots"
+  ]
+}

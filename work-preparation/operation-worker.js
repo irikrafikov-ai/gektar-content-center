@@ -1,6 +1,8 @@
 'use strict';
 const { hashJson, validateEditorialRequest, prepareEditorial, validateEditorialArtifact } = require('./editorial');
 const { materializeEditorialInput } = require('./source-loader');
+const draftContract = require('./text-draft.cjs');
+const { materializeTextDraftInput } = require('./text-draft-sources.cjs');
 const MAX_WIRE_BYTES = 1024 * 1024;
 const TASK_KEYS = ['protocol', 'task_id', 'idempotency_key', 'plan_id', 'work', 'agent', 'kind', 'created_at', 'deadline', 'parent_task_id', 'payload'];
 const resultStatusAllowed = (actual, expected) => actual === expected || (expected === 'submitted' && ['completed', 'rejected'].includes(actual));
@@ -62,16 +64,17 @@ function validateClaim(claim, observedAt) {
   exact(claim, ['task', 'request_hash', 'lease_id', 'lease_until', 'accepted_at']);
   const task = claim.task;
   exact(task, TASK_KEYS);
-  if (task.protocol !== 1 || task.agent !== 'content' || task.kind !== 'content.editorial.prepare' || !/^ot_[a-f0-9]{64}$/.test(task.task_id) || task.idempotency_key !== task.task_id) fail('invalid_operation_task');
+  if (task.protocol !== 1 || task.agent !== 'content' || !['content.editorial.prepare', 'content.text_draft.prepare'].includes(task.kind) || !/^ot_[a-f0-9]{64}$/.test(task.task_id) || task.idempotency_key !== task.task_id) fail('invalid_operation_task');
   if (!/^op_[a-f0-9]{64}$/.test(task.plan_id)) fail('invalid_operation_task');
   exact(task.work, ['objective', 'priority', 'dependencies', 'acceptance']);
-  if (task.work.acceptance !== 'content.editorial.prepare.v1' || typeof task.work.objective !== 'string' || !task.work.objective.trim() || task.work.objective.length > 1000 || /[\u0000-\u001f]/.test(task.work.objective) || !['critical', 'high', 'normal', 'low'].includes(task.work.priority) || !Array.isArray(task.work.dependencies) || task.work.dependencies.length > 20 || task.work.dependencies.some(id => !/^ot_[a-f0-9]{64}$/.test(id) || id === task.task_id) || new Set(task.work.dependencies).size !== task.work.dependencies.length) fail('invalid_operation_task');
+  if (task.work.acceptance !== `${task.kind}.v1` || typeof task.work.objective !== 'string' || !task.work.objective.trim() || task.work.objective.length > 1000 || /[\u0000-\u001f]/.test(task.work.objective) || !['critical', 'high', 'normal', 'low'].includes(task.work.priority) || !Array.isArray(task.work.dependencies) || task.work.dependencies.length > 20 || task.work.dependencies.some(id => !/^ot_[a-f0-9]{64}$/.test(id) || id === task.task_id) || new Set(task.work.dependencies).size !== task.work.dependencies.length) fail('invalid_operation_task');
   const identity = { plan_id: task.plan_id, work: task.work, agent: task.agent, kind: task.kind, created_at: task.created_at, deadline: task.deadline, parent_task_id: task.parent_task_id, payload: task.payload };
   if (task.task_id !== `ot_${hashJson(identity)}` || claim.request_hash !== hashJson(task)) fail('operation_hash_mismatch');
   if (task.parent_task_id !== null && !/^ot_[a-f0-9]{64}$/.test(task.parent_task_id)) fail('invalid_operation_task');
   if (instant(task.created_at) > instant(observedAt) || instant(task.deadline) <= instant(observedAt) || instant(claim.lease_until) <= instant(observedAt) || instant(claim.accepted_at) > instant(observedAt)) fail('operation_lease_expired');
   if (typeof claim.lease_id !== 'string' || !/^[A-Za-z0-9_-]{43}$/.test(claim.lease_id)) fail('invalid_operation_lease');
-  validateEditorialRequest(task.payload);
+  if (task.kind === 'content.text_draft.prepare') draftContract.validateInput(task.payload, { production: true, now: observedAt });
+  else validateEditorialRequest(task.payload);
   if (task.payload.input_class !== 'real') fail('production_worker_requires_real_input');
   return task;
 }
@@ -80,10 +83,11 @@ function sameIntent(seed, input) {
   const clean = value => { const copy = { ...value }; delete copy.snapshots; delete copy.evaluated_at; return copy; };
   if (hashJson(clean(seed)) !== hashJson(clean(input))) fail('operation_intent_mismatch');
 }
-async function processContentOperation({ request, readCalendar, now = () => new Date().toISOString(), projectFacts }) {
+async function processContentOperation({ request, readCalendar, now = () => new Date().toISOString(), projectFacts, draft }) {
   const claim = await request('POST', '/operations/tasks/claim', {});
   const task = validateClaim(claim, now());
   if (!task) return { outcome: 'idle' };
+  if (task.kind === 'content.text_draft.prepare') return draftContract.processDraftClaim({ claim, request, now, ...draft });
   const base = `/operations/tasks/${task.task_id}`;
   const state = await request('GET', base);
   if (state.request_hash !== claim.request_hash || hashJson(state.task) !== hashJson(task)) fail('operation_hash_mismatch');
@@ -123,16 +127,19 @@ async function processContentOperation({ request, readCalendar, now = () => new 
   if (stored.task_id !== task.task_id || stored.request_hash !== claim.request_hash || stored.input_hash !== inputHash || stored.artifact_hash !== artifactHash || !resultStatusAllowed(stored.status, status)) fail('operation_result_unconfirmed');
   return { outcome: stored.status, task_id: task.task_id, input_hash: inputHash, artifact_hash: artifactHash, preparation_status: artifact.status };
 }
-function startContentOperationWorker({ env = process.env, readCalendar, fetchImpl = globalThis.fetch, now, log = () => {}, intervalMs = 60000, projectFacts } = {}) {
+function startContentOperationWorker({ env = process.env, readCalendar, fetchImpl = globalThis.fetch, now, log = () => {}, intervalMs = 60000, projectFacts, draftMaterialize } = {}) {
   let config;
   try { config = operationConfig(env); } catch (error) { log({ code: error.code }); return { enabled: false, stop() {} }; }
   if (!config) return { enabled: false, stop() {} };
   if (typeof readCalendar !== 'function' || !Number.isInteger(intervalMs) || intervalMs < 1000) fail('invalid_operation_configuration');
+  let draft;
+  try { const c = draftContract.draftConfiguration(env, 'content'); if (c) draft = { infer: draftContract.createDraftInference(c, fetchImpl), materialize: draftMaterialize || ((seed, options) => materializeTextDraftInput(seed, { ...options, fetchImpl })) }; }
+  catch { log({ code: 'draft_configuration_invalid' }); }
   const request = createCoreTransport(config, fetchImpl); let active = false, stopped = false;
   async function tick() {
     if (stopped || active) return; active = true;
-    try { const outcome = await processContentOperation({ request, readCalendar, now, projectFacts }); if (outcome.outcome !== 'idle') log(outcome); }
-    catch (error) { log({ code: /^operation_|^invalid_operation|^production_worker/.test(error?.code || '') ? error.code : 'operation_preparation_blocked' }); }
+    try { const outcome = await processContentOperation({ request, readCalendar, now, projectFacts, draft }); if (outcome.outcome !== 'idle') log(outcome); }
+    catch (error) { log({ code: /^operation_|^invalid_operation|^production_worker|^draft_/.test(error?.code || '') ? error.code : 'operation_preparation_blocked' }); }
     finally { active = false; }
   }
   const timer = setInterval(tick, intervalMs); timer.unref?.(); void tick();
