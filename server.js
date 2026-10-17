@@ -5,6 +5,8 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs');
 const { createDirectorTaskHandler, readLocalPosts } = require('./director-tasks');
+const { startContentOperationWorker } = require('./work-preparation/operation-worker');
+const { readCalendarFile } = require('./work-preparation/source-loader');
 const app = express();
 
 // Dedicated read-only task inbox; leave the public API/UI behavior unchanged.
@@ -388,6 +390,13 @@ setInterval(async () => {
     if (changed) savePosts(posts);
   } catch (e) { console.error('scheduler', e); }
 }, 30000);
+
+// Separately scoped internal preparation worker; disabled unless explicitly enabled.
+// It reads calendar bytes and stores only review artifacts on core, never posts.
+startContentOperationWorker({
+  readCalendar: () => readCalendarFile(POSTS_FILE),
+  log: (event) => console.log('content operation', JSON.stringify(event)),
+});
 
 const port = process.env.PORT || 3000;
 app.listen(port, () => console.log('ГектарЪ content-center up on :' + port));

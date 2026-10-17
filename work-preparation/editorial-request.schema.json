@@ -1,0 +1,460 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "kind",
+    "input_class",
+    "project_id",
+    "objective",
+    "audience",
+    "planning_window",
+    "cadence",
+    "evaluated_at",
+    "snapshots"
+  ],
+  "properties": {
+    "schema_version": {
+      "enum": [
+        "content.editorial.prepare.v1"
+      ]
+    },
+    "kind": {
+      "enum": [
+        "content.editorial.prepare"
+      ]
+    },
+    "input_class": {
+      "enum": [
+        "real",
+        "synthetic_test"
+      ]
+    },
+    "project_id": {
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,95}$"
+    },
+    "objective": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "goal",
+        "instruction"
+      ],
+      "properties": {
+        "goal": {
+          "enum": [
+            "awareness",
+            "education",
+            "lead_qualification",
+            "partner_enablement"
+          ]
+        },
+        "instruction": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500,
+          "pattern": "^(?!.*[<>\\\\`$\\u0000-\\u001f\\u007f])(?!.*(?:https?|ftp|file|data|javascript):)(?!.*www\\.)(?!.*//)(?!.*(?:^|\\s)(?:/|~/|\\.\\.?/))(?!.*\\|\\|)(?!.*&&).+$"
+        }
+      }
+    },
+    "audience": {
+      "enum": [
+        "client",
+        "partner"
+      ]
+    },
+    "planning_window": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "starts_at",
+        "ends_at"
+      ],
+      "properties": {
+        "starts_at": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d\\.\\d{3}Z$"
+        },
+        "ends_at": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d\\.\\d{3}Z$"
+        }
+      }
+    },
+    "cadence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "weekdays",
+        "time_utc",
+        "max_slots",
+        "minimum_gap_hours"
+      ],
+      "properties": {
+        "weekdays": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 7
+          },
+          "minItems": 1,
+          "maxItems": 7,
+          "uniqueItems": true
+        },
+        "time_utc": {
+          "type": "string",
+          "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d$"
+        },
+        "max_slots": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 60
+        },
+        "minimum_gap_hours": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 168
+        }
+      }
+    },
+    "evaluated_at": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d\\.\\d{3}Z$"
+    },
+    "snapshots": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "project_facts",
+        "calendar"
+      ],
+      "properties": {
+        "project_facts": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "source_ref",
+                "revision",
+                "evidence_class",
+                "observed_at",
+                "valid_until",
+                "evidence_hash",
+                "data"
+              ],
+              "properties": {
+                "source_ref": {
+                  "type": "string",
+                  "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,95}$"
+                },
+                "revision": {
+                  "type": "string",
+                  "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,95}$"
+                },
+                "evidence_class": {
+                  "enum": [
+                    "real",
+                    "synthetic_test"
+                  ]
+                },
+                "observed_at": {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d\\.\\d{3}Z$"
+                },
+                "valid_until": {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d\\.\\d{3}Z$"
+                },
+                "evidence_hash": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "data": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "project_id",
+                    "facts",
+                    "assets"
+                  ],
+                  "properties": {
+                    "project_id": {
+                      "type": "string",
+                      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,95}$"
+                    },
+                    "facts": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "fact_id",
+                          "topic_id",
+                          "topic_title",
+                          "statement",
+                          "source_record_id",
+                          "audiences",
+                          "valid_from",
+                          "valid_until",
+                          "required_asset_kinds"
+                        ],
+                        "properties": {
+                          "fact_id": {
+                            "type": "string",
+                            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,95}$"
+                          },
+                          "topic_id": {
+                            "type": "string",
+                            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,95}$"
+                          },
+                          "topic_title": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 120,
+                            "pattern": "^(?!.*[<>\\\\`$\\u0000-\\u001f\\u007f])(?!.*(?:https?|ftp|file|data|javascript):)(?!.*www\\.)(?!.*//)(?!.*(?:^|\\s)(?:/|~/|\\.\\.?/))(?!.*\\|\\|)(?!.*&&).+$"
+                          },
+                          "statement": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 2000,
+                            "pattern": "^(?!.*[<>\\\\`$\\u0000-\\u001f\\u007f])(?!.*(?:https?|ftp|file|data|javascript):)(?!.*www\\.)(?!.*//)(?!.*(?:^|\\s)(?:/|~/|\\.\\.?/))(?!.*\\|\\|)(?!.*&&).+$"
+                          },
+                          "source_record_id": {
+                            "type": "string",
+                            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,95}$"
+                          },
+                          "audiences": {
+                            "type": "array",
+                            "items": {
+                              "enum": [
+                                "client",
+                                "partner"
+                              ]
+                            },
+                            "minItems": 1,
+                            "maxItems": 2,
+                            "uniqueItems": true
+                          },
+                          "valid_from": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d\\.\\d{3}Z$"
+                          },
+                          "valid_until": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d\\.\\d{3}Z$"
+                          },
+                          "required_asset_kinds": {
+                            "type": "array",
+                            "items": {
+                              "enum": [
+                                "project_photo",
+                                "map",
+                                "diagram",
+                                "video"
+                              ]
+                            },
+                            "minItems": 0,
+                            "maxItems": 4,
+                            "uniqueItems": true
+                          }
+                        }
+                      },
+                      "minItems": 0,
+                      "maxItems": 500
+                    },
+                    "assets": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "asset_id",
+                          "kind",
+                          "related_fact_ids",
+                          "rights_status"
+                        ],
+                        "properties": {
+                          "asset_id": {
+                            "type": "string",
+                            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,95}$"
+                          },
+                          "kind": {
+                            "enum": [
+                              "project_photo",
+                              "map",
+                              "diagram",
+                              "video"
+                            ]
+                          },
+                          "related_fact_ids": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,95}$"
+                            },
+                            "minItems": 0,
+                            "maxItems": 500,
+                            "uniqueItems": true
+                          },
+                          "rights_status": {
+                            "enum": [
+                              "approved",
+                              "unknown",
+                              "denied"
+                            ]
+                          }
+                        }
+                      },
+                      "minItems": 0,
+                      "maxItems": 500
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "calendar": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "source_ref",
+                "revision",
+                "evidence_class",
+                "observed_at",
+                "valid_until",
+                "evidence_hash",
+                "data"
+              ],
+              "properties": {
+                "source_ref": {
+                  "type": "string",
+                  "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,95}$"
+                },
+                "revision": {
+                  "type": "string",
+                  "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,95}$"
+                },
+                "evidence_class": {
+                  "enum": [
+                    "real",
+                    "synthetic_test"
+                  ]
+                },
+                "observed_at": {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d\\.\\d{3}Z$"
+                },
+                "valid_until": {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d\\.\\d{3}Z$"
+                },
+                "evidence_hash": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "data": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "project_id",
+                    "coverage_start",
+                    "coverage_end",
+                    "complete",
+                    "entries"
+                  ],
+                  "properties": {
+                    "project_id": {
+                      "type": "string",
+                      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,95}$"
+                    },
+                    "coverage_start": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d\\.\\d{3}Z$"
+                    },
+                    "coverage_end": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d\\.\\d{3}Z$"
+                    },
+                    "complete": {
+                      "type": "boolean"
+                    },
+                    "entries": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "entry_id",
+                          "scheduled_at",
+                          "audience",
+                          "topic_id",
+                          "status"
+                        ],
+                        "properties": {
+                          "entry_id": {
+                            "type": "string",
+                            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,95}$"
+                          },
+                          "scheduled_at": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d\\.\\d{3}Z$"
+                          },
+                          "audience": {
+                            "enum": [
+                              "client",
+                              "partner"
+                            ]
+                          },
+                          "topic_id": {
+                            "type": "string",
+                            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,95}$"
+                          },
+                          "status": {
+                            "enum": [
+                              "draft",
+                              "scheduled",
+                              "published"
+                            ]
+                          }
+                        }
+                      },
+                      "minItems": 0,
+                      "maxItems": 2000
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Offline content editorial preparation request v1",
+  "description": "Closed structural contract. Runtime additionally verifies exact dates, trimmed safe text case-insensitively, JSON-only graph bounds, hashes, uniqueness, source/project consistency, and cross-field validity."
+}

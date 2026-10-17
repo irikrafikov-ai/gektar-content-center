@@ -248,7 +248,10 @@ test('integration is additive; original public server and UI bytes remain unchan
   const mount = "// Dedicated read-only task inbox; leave the public API/UI behavior unchanged.\napp.use('/director/tasks', createDirectorTaskHandler({\n  token: process.env.DIRECTOR_TASK_TOKEN,\n  readPosts: (options) => readLocalPosts(POSTS_FILE, options),\n}));\n\n";
   assert.equal(source.split(insertion).length, 2); assert.equal(source.split(mount).length, 2);
   assert.ok(source.indexOf("app.use('/director/tasks'") < source.indexOf('app.use(express.json'));
-  const baseline = source.replace(insertion, '').replace(mount, '');
+  const operationImports = "const { startContentOperationWorker } = require('./work-preparation/operation-worker');\nconst { readCalendarFile } = require('./work-preparation/source-loader');\n";
+  const operationStartup = "// Separately scoped internal preparation worker; disabled unless explicitly enabled.\n// It reads calendar bytes and stores only review artifacts on core, never posts.\nstartContentOperationWorker({\n  readCalendar: () => readCalendarFile(POSTS_FILE),\n  log: (event) => console.log('content operation', JSON.stringify(event)),\n});\n\n";
+  assert.equal(source.split(operationImports).length, 2); assert.equal(source.split(operationStartup).length, 2);
+  const baseline = source.replace(insertion, '').replace(mount, '').replace(operationImports, '').replace(operationStartup, '');
   const gitHash = bytes => createHash('sha1').update(`blob ${Buffer.byteLength(bytes)}\0`).update(bytes).digest('hex');
   assert.equal(gitHash(baseline), '8300b260a3023fde2a375d92c0db0e4b22c17dae');
   assert.equal(gitHash(await readFile(join(__dirname, '..', 'public', 'index.html'))), 'd5c1464c0396a3ca3a8df8863a3f32d476d53462');

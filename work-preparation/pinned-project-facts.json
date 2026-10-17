@@ -1,0 +1,62 @@
+{
+  "source_ref": "github.irikrafikov-ai.gektar-avito-kb.location",
+  "revision": "4d3b612413f4483529d6af01dabe157dba007993",
+  "evidence_class": "real",
+  "observed_at": "2026-10-17T09:58:59.000Z",
+  "valid_until": "2026-10-24T09:58:59.000Z",
+  "data": {
+    "project_id": "sb",
+    "facts": [
+      {
+        "fact_id": "kb-location-L23",
+        "topic_id": "sb-utilities",
+        "topic_title": "Коммуникации: границы подключения",
+        "statement": "Все коммуникации по границам нашего посёлка согласованы, включая свет, воду, газ и интернет.",
+        "source_record_id": "blob-c8ef2962d199eef2962da262f5b9a310858a8d0b-L23",
+        "audiences": [
+          "client",
+          "partner"
+        ],
+        "valid_from": "2026-10-17T09:58:59.000Z",
+        "valid_until": "2026-10-24T09:58:59.000Z",
+        "required_asset_kinds": [
+          "diagram"
+        ]
+      },
+      {
+        "fact_id": "kb-location-L27",
+        "topic_id": "sb-utilities",
+        "topic_title": "Коммуникации: границы подключения",
+        "statement": "Канализация — септик, как обычно за городом. Центральной в посёлке нет.",
+        "source_record_id": "blob-c8ef2962d199eef2962da262f5b9a310858a8d0b-L27",
+        "audiences": [
+          "client",
+          "partner"
+        ],
+        "valid_from": "2026-10-17T09:58:59.000Z",
+        "valid_until": "2026-10-24T09:58:59.000Z",
+        "required_asset_kinds": [
+          "diagram"
+        ]
+      },
+      {
+        "fact_id": "kb-location-L47",
+        "topic_id": "sb-location",
+        "topic_title": "Точка на карте",
+        "statement": "Точка на карте: 53.924358, 37.622144",
+        "source_record_id": "blob-c8ef2962d199eef2962da262f5b9a310858a8d0b-L47",
+        "audiences": [
+          "client",
+          "partner"
+        ],
+        "valid_from": "2026-10-17T09:58:59.000Z",
+        "valid_until": "2026-10-24T09:58:59.000Z",
+        "required_asset_kinds": [
+          "map"
+        ]
+      }
+    ],
+    "assets": []
+  },
+  "evidence_hash": "37d31c5ab78dbb9f5114c7e6b635da547e9c1bf27290e0293e12624923e8433e"
+}

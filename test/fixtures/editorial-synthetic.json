@@ -1,0 +1,101 @@
+{
+  "schema_version": "content.editorial.prepare.v1",
+  "kind": "content.editorial.prepare",
+  "input_class": "synthetic_test",
+  "project_id": "synthetic-project",
+  "objective": {
+    "goal": "education",
+    "instruction": "Explain only the supplied synthetic project facts."
+  },
+  "audience": "client",
+  "planning_window": {
+    "starts_at": "2026-10-18T00:00:00.000Z",
+    "ends_at": "2026-10-22T00:00:00.000Z"
+  },
+  "cadence": {
+    "weekdays": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "time_utc": "10:00",
+    "max_slots": 3,
+    "minimum_gap_hours": 24
+  },
+  "evaluated_at": "2026-10-17T08:00:00.000Z",
+  "snapshots": {
+    "project_facts": {
+      "source_ref": "synthetic.project-facts",
+      "revision": "synthetic-r1",
+      "evidence_class": "synthetic_test",
+      "observed_at": "2026-10-17T08:00:00.000Z",
+      "valid_until": "2026-10-18T08:00:00.000Z",
+      "data": {
+        "project_id": "synthetic-project",
+        "facts": [
+          {
+            "fact_id": "synthetic-fact-1",
+            "topic_id": "synthetic-topic-1",
+            "topic_title": "Synthetic map explanation",
+            "statement": "Synthetic project map revision 4 shows the northern entrance.",
+            "source_record_id": "synthetic-record-1",
+            "audiences": [
+              "client",
+              "partner"
+            ],
+            "valid_from": "2026-10-01T00:00:00.000Z",
+            "valid_until": "2026-10-31T00:00:00.000Z",
+            "required_asset_kinds": [
+              "map"
+            ]
+          },
+          {
+            "fact_id": "synthetic-fact-2",
+            "topic_id": "synthetic-topic-2",
+            "topic_title": "Synthetic project photograph",
+            "statement": "Synthetic photograph record was captured on 15 October.",
+            "source_record_id": "synthetic-record-2",
+            "audiences": [
+              "client"
+            ],
+            "valid_from": "2026-10-01T00:00:00.000Z",
+            "valid_until": "2026-10-31T00:00:00.000Z",
+            "required_asset_kinds": [
+              "project_photo"
+            ]
+          }
+        ],
+        "assets": [
+          {
+            "asset_id": "synthetic-map-1",
+            "kind": "map",
+            "related_fact_ids": [
+              "synthetic-fact-1"
+            ],
+            "rights_status": "approved"
+          }
+        ]
+      },
+      "evidence_hash": "b94e6dd5fd0a3b83cc15057bafd62ee3200f3d10ee6d8cf70ccc4842849d4072"
+    },
+    "calendar": {
+      "source_ref": "synthetic.calendar",
+      "revision": "synthetic-r7",
+      "evidence_class": "synthetic_test",
+      "observed_at": "2026-10-17T08:00:00.000Z",
+      "valid_until": "2026-10-18T08:00:00.000Z",
+      "data": {
+        "project_id": "synthetic-project",
+        "coverage_start": "2026-10-11T00:00:00.000Z",
+        "coverage_end": "2026-10-29T00:00:00.000Z",
+        "complete": true,
+        "entries": []
+      },
+      "evidence_hash": "039e52bbb7fc49be152fbcdd1e4820c433a6acbcae85299136a4c073729b4399"
+    }
+  }
+}

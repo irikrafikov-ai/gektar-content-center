@@ -1,0 +1,508 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "kind",
+    "request_hash",
+    "input_class",
+    "status",
+    "scope",
+    "publication_authorized",
+    "business_readiness",
+    "semantic_fact_verification",
+    "source_authenticity",
+    "freshness_scope",
+    "project_id",
+    "audience",
+    "objective",
+    "planning_window",
+    "cadence",
+    "evaluated_at",
+    "evidence",
+    "slots",
+    "conflict_warnings",
+    "blockers",
+    "artifact_hash"
+  ],
+  "properties": {
+    "schema_version": {
+      "enum": [
+        "content.editorial.prepared.v1"
+      ]
+    },
+    "kind": {
+      "enum": [
+        "content.editorial.prepared"
+      ]
+    },
+    "request_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "input_class": {
+      "enum": [
+        "real",
+        "synthetic_test"
+      ]
+    },
+    "status": {
+      "enum": [
+        "ready_for_review",
+        "blocked_missing_input",
+        "blocked_stale_input"
+      ]
+    },
+    "scope": {
+      "enum": [
+        "internal_review_only"
+      ]
+    },
+    "publication_authorized": {
+      "enum": [
+        false
+      ]
+    },
+    "business_readiness": {
+      "enum": [
+        "not_assessed"
+      ]
+    },
+    "semantic_fact_verification": {
+      "enum": [
+        "not_performed"
+      ]
+    },
+    "source_authenticity": {
+      "enum": [
+        "not_verified_offline"
+      ]
+    },
+    "freshness_scope": {
+      "enum": [
+        "supplied_evaluation_time_only"
+      ]
+    },
+    "project_id": {
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,95}$"
+    },
+    "audience": {
+      "enum": [
+        "client",
+        "partner"
+      ]
+    },
+    "objective": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "goal",
+        "instruction"
+      ],
+      "properties": {
+        "goal": {
+          "enum": [
+            "awareness",
+            "education",
+            "lead_qualification",
+            "partner_enablement"
+          ]
+        },
+        "instruction": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500,
+          "pattern": "^(?!.*[<>\\\\`$\\u0000-\\u001f\\u007f])(?!.*(?:https?|ftp|file|data|javascript):)(?!.*www\\.)(?!.*//)(?!.*(?:^|\\s)(?:/|~/|\\.\\.?/))(?!.*\\|\\|)(?!.*&&).+$"
+        }
+      }
+    },
+    "planning_window": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "starts_at",
+        "ends_at"
+      ],
+      "properties": {
+        "starts_at": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d\\.\\d{3}Z$"
+        },
+        "ends_at": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d\\.\\d{3}Z$"
+        }
+      }
+    },
+    "cadence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "weekdays",
+        "time_utc",
+        "max_slots",
+        "minimum_gap_hours"
+      ],
+      "properties": {
+        "weekdays": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 7
+          },
+          "minItems": 1,
+          "maxItems": 7,
+          "uniqueItems": true
+        },
+        "time_utc": {
+          "type": "string",
+          "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d$"
+        },
+        "max_slots": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 60
+        },
+        "minimum_gap_hours": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 168
+        }
+      }
+    },
+    "evaluated_at": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d\\.\\d{3}Z$"
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "role",
+          "source_ref",
+          "revision",
+          "evidence_class",
+          "observed_at",
+          "valid_until",
+          "evidence_hash"
+        ],
+        "properties": {
+          "role": {
+            "enum": [
+              "project_facts",
+              "calendar"
+            ]
+          },
+          "source_ref": {
+            "type": "string",
+            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,95}$"
+          },
+          "revision": {
+            "type": "string",
+            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,95}$"
+          },
+          "evidence_class": {
+            "enum": [
+              "real",
+              "synthetic_test"
+            ]
+          },
+          "observed_at": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d\\.\\d{3}Z$"
+          },
+          "valid_until": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d\\.\\d{3}Z$"
+          },
+          "evidence_hash": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        }
+      },
+      "minItems": 0,
+      "maxItems": 2
+    },
+    "slots": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "slot_id",
+          "proposed_at",
+          "status",
+          "topic_id",
+          "topic_title",
+          "brief",
+          "fact_refs",
+          "asset_refs",
+          "missing_assets"
+        ],
+        "properties": {
+          "slot_id": {
+            "type": "string",
+            "pattern": "^slot_[a-f0-9]{64}$"
+          },
+          "proposed_at": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d\\.\\d{3}Z$"
+          },
+          "status": {
+            "enum": [
+              "proposed_only"
+            ]
+          },
+          "topic_id": {
+            "type": "string",
+            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,95}$"
+          },
+          "topic_title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120,
+            "pattern": "^(?!.*[<>\\\\`$\\u0000-\\u001f\\u007f])(?!.*(?:https?|ftp|file|data|javascript):)(?!.*www\\.)(?!.*//)(?!.*(?:^|\\s)(?:/|~/|\\.\\.?/))(?!.*\\|\\|)(?!.*&&).+$"
+          },
+          "brief": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "goal",
+              "instruction",
+              "source_claims",
+              "review_requirements"
+            ],
+            "properties": {
+              "goal": {
+                "enum": [
+                  "awareness",
+                  "education",
+                  "lead_qualification",
+                  "partner_enablement"
+                ]
+              },
+              "instruction": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 500,
+                "pattern": "^(?!.*[<>\\\\`$\\u0000-\\u001f\\u007f])(?!.*(?:https?|ftp|file|data|javascript):)(?!.*www\\.)(?!.*//)(?!.*(?:^|\\s)(?:/|~/|\\.\\.?/))(?!.*\\|\\|)(?!.*&&).+$"
+              },
+              "source_claims": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "text",
+                    "fact_id"
+                  ],
+                  "properties": {
+                    "text": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 2000,
+                      "pattern": "^(?!.*[<>\\\\`$\\u0000-\\u001f\\u007f])(?!.*(?:https?|ftp|file|data|javascript):)(?!.*www\\.)(?!.*//)(?!.*(?:^|\\s)(?:/|~/|\\.\\.?/))(?!.*\\|\\|)(?!.*&&).+$"
+                    },
+                    "fact_id": {
+                      "type": "string",
+                      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,95}$"
+                    }
+                  }
+                },
+                "minItems": 1,
+                "maxItems": 500
+              },
+              "review_requirements": {
+                "const": [
+                  "verify_source_claims",
+                  "confirm_audience_and_channel",
+                  "review_final_copy",
+                  "obtain_separate_publication_approval"
+                ]
+              }
+            }
+          },
+          "fact_refs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "fact_id",
+                "source_record_id",
+                "statement_hash",
+                "source_ref",
+                "revision",
+                "evidence_hash"
+              ],
+              "properties": {
+                "fact_id": {
+                  "type": "string",
+                  "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,95}$"
+                },
+                "source_record_id": {
+                  "type": "string",
+                  "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,95}$"
+                },
+                "statement_hash": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "source_ref": {
+                  "type": "string",
+                  "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,95}$"
+                },
+                "revision": {
+                  "type": "string",
+                  "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,95}$"
+                },
+                "evidence_hash": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                }
+              }
+            },
+            "minItems": 1,
+            "maxItems": 500
+          },
+          "asset_refs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,95}$"
+            },
+            "minItems": 0,
+            "maxItems": 500,
+            "uniqueItems": true
+          },
+          "missing_assets": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "project_photo",
+                "map",
+                "diagram",
+                "video"
+              ]
+            },
+            "minItems": 0,
+            "maxItems": 4,
+            "uniqueItems": true
+          }
+        }
+      },
+      "minItems": 0,
+      "maxItems": 60
+    },
+    "conflict_warnings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "code",
+          "proposed_at",
+          "reference_ids"
+        ],
+        "properties": {
+          "code": {
+            "enum": [
+              "cadence_conflict",
+              "topic_repetition_review",
+              "asset_rights_not_approved",
+              "cadence_capacity_limited"
+            ]
+          },
+          "proposed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d\\.\\d{3}Z$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reference_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,95}$"
+            },
+            "minItems": 0,
+            "maxItems": 2000,
+            "uniqueItems": true
+          }
+        }
+      },
+      "minItems": 0,
+      "maxItems": 300
+    },
+    "blockers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "code",
+          "source_role",
+          "proposed_at"
+        ],
+        "properties": {
+          "code": {
+            "enum": [
+              "missing_snapshot",
+              "stale_or_future_snapshot",
+              "synthetic_source_not_real",
+              "missing_audience_facts",
+              "incomplete_calendar_coverage",
+              "no_facts_valid_for_slot",
+              "no_available_editorial_slots",
+                "planning_window_started"
+            ]
+          },
+          "source_role": {
+            "enum": [
+              "project_facts",
+              "calendar"
+            ]
+          },
+          "proposed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d\\.\\d{3}Z$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "minItems": 0,
+      "maxItems": 100
+    },
+    "artifact_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Offline content editorial preparation artifact v1",
+  "description": "Closed structural contract. validateEditorialArtifact additionally replays the supplied frozen request and requires exact canonical equality, including every claim, blocker, source reference, and hash."
+}
