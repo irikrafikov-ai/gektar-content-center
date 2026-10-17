@@ -4,7 +4,14 @@
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
+const { createDirectorTaskHandler, readLocalPosts } = require('./director-tasks');
 const app = express();
+
+// Dedicated read-only task inbox; leave the public API/UI behavior unchanged.
+app.use('/director/tasks', createDirectorTaskHandler({
+  token: process.env.DIRECTOR_TASK_TOKEN,
+  readPosts: (options) => readLocalPosts(POSTS_FILE, options),
+}));
 
 app.use(express.json({ limit: '16mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
