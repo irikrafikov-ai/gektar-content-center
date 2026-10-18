@@ -1,7 +1,9 @@
 'use strict';
 // Release-owned, import-safe contract. No writes, model SDK, public routes, or fallback.
 const { createHash } = require('node:crypto');
-const INPUT_SCHEMA = require('./text-draft-input.schema.json');
+const PILOT_INPUT_SCHEMA = require('./text-draft-input.schema.json');
+const PRODUCTION_INPUT_SCHEMA = require('./text-draft-production-input.schema.json');
+const INPUT_SCHEMA = {anyOf: [PILOT_INPUT_SCHEMA, PRODUCTION_INPUT_SCHEMA]};
 const MODEL_SCHEMA = require('./text-draft-model-output.schema.json');
 const ARTIFACT_SCHEMA = require('./text-draft-artifact.schema.json');
 const CORE_ORIGIN = 'https://zemfond-codex-core-production.up.railway.app';
@@ -46,6 +48,10 @@ function validateInput(input, { complete = false, production = false, now = inpu
   const content = input.kind === KINDS[0];
   if (input.output.format !== (content ? 'content_posts' : 'avito_listing') || (!content && input.output.count !== 1) || ! /^[1-9]\d{0,2}$/.test(input.selection.plot_number)) fail('draft_intent_invalid');
   if (!utc(now) || Date.parse(input.evaluated_at) > Date.parse(now)) fail('draft_time_invalid');
+  if (input.schema_version === 'text_draft.input.v2') {
+    const cycle = new Intl.DateTimeFormat('sv-SE', {timeZone: 'Europe/Moscow', year: 'numeric', month: '2-digit', day: '2-digit'}).format(new Date(now));
+    if (input.cycle_date !== cycle) fail('draft_production_cycle_invalid');
+  }
   for (const [type, s] of Object.entries(input.snapshots)) {
     if (s === null) { if (complete && ['inventory', 'project', 'cadastre'].includes(type)) fail('draft_source_missing'); continue; }
     if (s.source_ref !== SOURCE_REFS[type] || s.sha256 !== hashJson(s.data) || Date.parse(now) - Date.parse(s.observed_at) > (type === 'inventory' ? 15 * 60 * 1000 : 24 * 60 * 60 * 1000) || s.data.project_id !== input.project_id || Date.parse(s.observed_at) > Date.parse(input.evaluated_at) || (s.source_modified_at !== null && Date.parse(s.source_modified_at) > Date.parse(s.observed_at))) fail('draft_source_binding_invalid');
