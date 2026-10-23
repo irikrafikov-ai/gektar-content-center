@@ -21,6 +21,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 // ── постоянное хранилище (на Railway лучше смонтировать Volume и задать DATA_DIR=/data) ──
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 const POSTS_FILE = path.join(DATA_DIR, 'posts.json');
+require('./video-jobs').mountVideoJobs(app, { directory: path.join(DATA_DIR, 'video-jobs'), token: process.env.DIRECTOR_TASK_TOKEN, apiKey: process.env.KIE_API_KEY });
 const UPLOAD_DIR = path.join(DATA_DIR, 'uploads');
 try { fs.mkdirSync(UPLOAD_DIR, { recursive: true }); } catch (_) {}
 app.use('/uploads', express.static(UPLOAD_DIR));
