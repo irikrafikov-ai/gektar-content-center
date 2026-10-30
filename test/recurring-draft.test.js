@@ -55,3 +55,24 @@ test('production unknown inference never retries',async()=>{
  await assert.rejects(D.processDraftClaim({claim:{task:t,request_hash:hash,lease_id:'l'.repeat(43),lease_until:'2026-10-18T09:05:00Z'},request:async(method)=>method==='GET'?state:{task_id:t.task_id,request_hash:hash,input_hash:state.input_hash,status:'running'},materialize:async()=>v,now:()=>at,infer:async()=>{calls++;throw Object.assign(new Error('unknown'),{code:'draft_inference_unknown'});}}),/unknown/);
  assert.equal(calls,1);
 });
+
+function dayInput() {
+ const v=input();v.authorization_id='marketing-production-grant-20261030-v1';
+ v.cycle_date='2026-10-30';v.evaluated_at='2026-10-30T07:00:00Z';
+ for(const source of Object.values(v.snapshots))if(source)source.observed_at=v.evaluated_at;
+ return v;
+}
+test('explicit Oct 30 authorization accepts only the existing plot 4 contract',()=>{
+ const v=dayInput();D.validateInput(v,{complete:true,production:true,now:v.evaluated_at});
+ assert.equal(v.regime_id,'marketing-production-20261018-v1');
+ for(const change of [w=>w.authorization_id='marketing-production-grant-20261031-v1',w=>w.cycle_date='2026-10-31',w=>w.selection.plot_number='5']){
+  const wrong=structuredClone(v);change(wrong);assert.throws(()=>D.validateInput(wrong,{complete:true,production:true,now:wrong.evaluated_at}));
+ }
+});
+test('Oct 30 grant does not authorize tomorrow or launder stale facts',()=>{
+ const v=dayInput();v.evaluated_at='2026-10-31T07:00:00Z';v.cycle_date='2026-10-31';
+ for(const source of Object.values(v.snapshots))if(source)source.observed_at=v.evaluated_at;
+ assert.throws(()=>D.validateInput(v,{complete:true,production:true,now:v.evaluated_at}),/draft_production_day_scope_invalid/);
+ const stale=dayInput();stale.snapshots.project.observed_at='2026-10-28T07:00:00Z';
+ assert.throws(()=>D.validateInput(stale,{complete:true,production:true,now:stale.evaluated_at}),/draft_source_binding_invalid/);
+});

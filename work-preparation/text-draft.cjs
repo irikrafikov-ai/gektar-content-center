@@ -51,6 +51,7 @@ function validateInput(input, { complete = false, production = false, now = inpu
   if (input.schema_version === 'text_draft.input.v2') {
     const cycle = new Intl.DateTimeFormat('sv-SE', {timeZone: 'Europe/Moscow', year: 'numeric', month: '2-digit', day: '2-digit'}).format(new Date(now));
     if (input.cycle_date !== cycle) fail('draft_production_cycle_invalid');
+    if (input.authorization_id === 'marketing-production-grant-20261030-v1' && (input.cycle_date !== '2026-10-30' || input.selection.plot_number !== '4')) fail('draft_production_day_scope_invalid');
   }
   for (const [type, s] of Object.entries(input.snapshots)) {
     if (s === null) { if (complete && ['inventory', 'project', 'cadastre'].includes(type)) fail('draft_source_missing'); continue; }

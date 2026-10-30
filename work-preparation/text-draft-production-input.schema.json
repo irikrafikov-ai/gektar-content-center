@@ -385,7 +385,7 @@
       "const": "marketing-production-20261018-v1"
     },
     "authorization_id": {
-      "const": "marketing-production-grant-20261018-v1"
+      "enum": ["marketing-production-grant-20261018-v1", "marketing-production-grant-20261030-v1"]
     },
     "cycle_date": {
       "type": "string",
